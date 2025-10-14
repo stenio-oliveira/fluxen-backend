@@ -26,13 +26,12 @@ model equipamento_log {
   id_metrica             Int
   id_equipamento         Int
   valor_convertido       Decimal              @default(0) @db.Decimal(10, 0)
-  equipamento            equipamento          @relation(fields: [id_equipamento], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "equipamento")
+  equipamento            equipamento          @relation(fields: [id_equipamento_metrica], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "equipamento")
   equipamento_metricas   equipamento_metricas @relation(fields: [id_equipamento_metrica], references: [id], onDelete: Cascade)
   metrica                metrica              @relation(fields: [id_metrica], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "metrica")
 
   @@index([id_equipamento_metrica], map: "equipamento_log_id_equipamento_metrica_fkey")
   @@index([id_metrica], map: "metrica_idx")
-  @@index([id_equipamento], map: "equipamento_idx")
 }
 
 model equipamento_metricas {

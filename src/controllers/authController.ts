@@ -67,7 +67,9 @@ export class AuthController {
         const token = jwt.sign({ id: user.id, email: user.email }, secret, {
           expiresIn: "2h",
         });
-        return res.json({ token });
+        console.log('token: ', token)
+        console.log('user: ', user)
+        return res.json({ token, user });
       }
       return res.status(401).json({message: 'Senha ou email incorreto'});
      
