@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model equipamento {
+  id                   Int                    @id @default(autoincrement())
+  nome                 String
+  id_usuario           Int?
+  api_key              String?                @db.Text
+  usuario              usuario?               @relation(fields: [id_usuario], references: [id])
+  equipamento_log      equipamento_log[]
+  equipamento_metricas equipamento_metricas[]
+
+  @@index([id_usuario], map: "equipamento_id_usuario_fkey")
+}
+
+model equipamento_log {
+  id                     Int                  @id @default(autoincrement())
+  id_equipamento_metrica Int
+  valor                  Int
+  id_metrica             Int
+  id_equipamento         Int
+  valor_convertido       Decimal              @default(0) @db.Decimal(10, 0)
+  equipamento            equipamento          @relation(fields: [id_equipamento], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "equipamento")
+  equipamento_metricas   equipamento_metricas @relation(fields: [id_equipamento_metrica], references: [id], onDelete: Cascade)
+  metrica                metrica              @relation(fields: [id_metrica], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "metrica")
+
+  @@index([id_equipamento_metrica], map: "equipamento_log_id_equipamento_metrica_fkey")
+  @@index([id_metrica], map: "metrica_idx")
+  @@index([id_equipamento], map: "equipamento_idx")
+}
+
+model equipamento_metricas {
+  id              Int               @id @default(autoincrement())
+  id_equipamento  Int
+  id_metrica      Int
+  valor_minimo    Float
+  valor_maximo    Float
+  equipamento_log equipamento_log[]
+  equipamento     equipamento       @relation(fields: [id_equipamento], references: [id], map: "equipamento_metrica_id_equipamento_fkey")
+  metrica         metrica           @relation(fields: [id_metrica], references: [id], map: "equipamento_metrica_id_metrica_fkey")
+
+  @@index([id_equipamento], map: "equipamento_metrica_id_equipamento_fkey")
+  @@index([id_metrica], map: "equipamento_metrica_id_metrica_fkey")
+}
+
+model metrica {
+  id                   Int                    @id @default(autoincrement())
+  nome                 String
+  unidade              String
+  equipamento_log      equipamento_log[]
+  equipamento_metricas equipamento_metricas[]
+}
+
+model perfil {
+  id             Int              @id @default(autoincrement())
+  nome           String
+  descricao      String?
+  usuario_perfil usuario_perfil[]
+}
+
+model usuario {
+  id             Int              @id @default(autoincrement())
+  nome           String
+  email          String           @unique
+  senha          String
+  username       String           @unique
+  equipamento    equipamento[]
+  usuario_perfil usuario_perfil[]
+}
+
+model usuario_perfil {
+  id         Int     @id @default(autoincrement())
+  id_usuario Int
+  id_perfil  Int
+  perfil     perfil  @relation(fields: [id_perfil], references: [id], onDelete: Cascade)
+  usuario    usuario @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+
+  @@index([id_perfil], map: "usuario_perfil_id_perfil_fkey")
+  @@index([id_usuario], map: "usuario_perfil_id_usuario_fkey")
+}

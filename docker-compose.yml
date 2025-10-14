@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: equipamentos_sirgs_app
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/usr/src/app
+      - /usr/src/app/node_modules
+    depends_on:
+      - db
+    command: sh -c "npx prisma generate && npm run dev"
+
+  db:
+    image: mysql:8.0
+    container_name: equipamentos_sirgs_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: sirgs_equipamentos
+      MYSQL_USER: sirgs
+      MYSQL_PASSWORD: sirgspassword
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+volumes:
+  db_data:
