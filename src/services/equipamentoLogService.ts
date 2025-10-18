@@ -41,14 +41,16 @@ export class EquipamentoLogService {
           log.id_metrica || 0
         );
         if (equipamentoMetrica) {
-          const reference = 4096;
-          const { valor } = log; //valor vai vir cru (na unidade que vai de 0 a 4096)
-          const { valor_minimo, valor_maximo } = equipamentoMetrica; //baseado nessa unidade, fazer regra de tres
-          log.valor_convertido =
-            ((Number(valor) - reference) * (valor_maximo - valor_minimo)) /
-              (reference - 0) +
-            valor_minimo;
-          log.id_equipamento_metrica = equipamentoMetrica.id;
+              const range_original_min = 0;
+              const range_original_max = 4096;
+              const { valor } = log;
+              const { valor_minimo, valor_maximo } = equipamentoMetrica;
+              
+              log.valor_convertido =
+                ((Number(valor) - range_original_min) * (valor_maximo - valor_minimo)) /
+                (range_original_max - range_original_min) +
+                valor_minimo;
+              log.id_equipamento_metrica = equipamentoMetrica.id;
         }
       }
       const logsCreated = await this.equipamentoLogRepository.createMany(
@@ -59,8 +61,8 @@ export class EquipamentoLogService {
         throw new Error('Failed to create logs');
       }
       
-      // Retornar os logs criados
-      return this.equipamentoLogRepository.findByEquipamentoId(equipamentoId);
+      // Retornar os todos os logs
+      return this.equipamentoLogRepository.findByEquipamentoId(equipamentoId, tx);
     });
   }
 
