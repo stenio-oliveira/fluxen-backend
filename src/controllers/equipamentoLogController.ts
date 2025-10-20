@@ -33,6 +33,18 @@ export class EquipamentoLogController {
   async receiveLogsFromEquipamento(req: Request, res: Response): Promise<void> {
     try {
       const data = req.body as CreateEquipamentoLogsDTO;
+      // Não pode haver mais de um valor com o mesmo id_metrica
+      if (data && data.logs && Array.isArray(data.logs)) {
+        const seenMetricas = new Set<number>();
+        for (const log of data.logs) {
+          if (seenMetricas.has(log.id_metrica)) {
+            res.status(400).json({ message: "Não pode haver mais de um valor com o mesmo id_metrica" });
+            return;
+          }
+          seenMetricas.add(log.id_metrica);
+        }
+      }
+
       const logs = await this.equipamentoLogService.createManyEquipamentoLogs(req.body);
       res.status(201).json(logs);
     } catch (error) {
@@ -81,6 +93,17 @@ export class EquipamentoLogController {
     } catch (error) {
       console.error('Erro em deleteEquipamentoLog:', error);
       res.status(500).json({ message: 'Erro ao deletar log de equipamento' });
+    }
+  }
+
+  async getLogsTableData(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const tableData = await this.equipamentoLogService.getLogsTableData(Number(id));
+      res.json(tableData);
+    } catch (error) {
+      console.error('Erro em getLogsTableData:', error);
+      res.status(500).json({ message: 'Erro ao buscar dados da tabela de logs' });
     }
   }
 }

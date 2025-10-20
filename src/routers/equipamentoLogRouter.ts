@@ -9,6 +9,7 @@ const equipamentoLogController = new EquipamentoLogController();
 // Rotas para usuários (JWT) - gerenciamento via frontend
 router.get('/equipamento-logs', authenticateToken, equipamentoLogController.getEquipamentoLogs.bind(equipamentoLogController));
 router.get('/equipamento-logs/:id', authenticateToken, equipamentoLogController.getEquipamentoLogById.bind(equipamentoLogController));
+router.get('/equipamento-logs/table/:id', authenticateToken, equipamentoLogController.getLogsTableData.bind(equipamentoLogController));
 router.post('/equipamento-logs', authenticateToken, equipamentoLogController.createManyEquipamentoLogs.bind(equipamentoLogController));
 router.put('/equipamento-logs/:id', authenticateToken, equipamentoLogController.updateEquipamentoLog.bind(equipamentoLogController));
 router.delete('/equipamento-logs/:id', authenticateToken, equipamentoLogController.deleteEquipamentoLog.bind(equipamentoLogController));

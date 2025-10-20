@@ -4,7 +4,8 @@ import { EquipamentoMetricaRepository } from "../repositories/equipamentoMetrica
 import { EquipamentoMetrica } from "../types/EquipamentoMetrica";
 import { prisma } from "..";
 import { Prisma } from "@prisma/client";
-import { CreateEquipamentoLogsDTO } from "../dto/HttpRequestDTOS/CreateEquipamentoLogsDTO";
+import { CreateEquipamentoLogDTO, CreateEquipamentoLogsDTO } from "../dto/HttpRequestDTOS/CreateEquipamentoLogsDTO";
+import { UpdateEquipamentoLogDTO } from "../dto/HttpRequestDTOS/UpdateEquipamentoLogDTO";
 export class EquipamentoLogService {
   private equipamentoLogRepository = new EquipamentoLogRepository();
   private equipamentoMetricaRepository = new EquipamentoMetricaRepository();
@@ -29,10 +30,15 @@ export class EquipamentoLogService {
           tx
         );
       const metricaToEquipamentoMetrica = new Map<number, EquipamentoMetrica>();
+      const newGroup = await this.equipamentoLogRepository.createGroup(equipamentoId ,tx);
+      data.logs.forEach(log => {
+        log.id_grupo = newGroup.id;
+
+      });
       //mapeando equipamentoMetrica (que contém informações para conversão) para cada métrica em cada log
       for (const equipamentoMetrica of equipamentoMetricas) {
         metricaToEquipamentoMetrica.set(
-          equipamentoMetrica.id_metrica,
+          equipamentoMetrica.id_metrica || 0,
           equipamentoMetrica
         );
       }
@@ -51,10 +57,15 @@ export class EquipamentoLogService {
                 (range_original_max - range_original_min) +
                 valor_minimo;
               log.id_equipamento_metrica = equipamentoMetrica.id;
+              
+              // Se não foi fornecido timestamp, usar o atual
+              if (!log.timestamp) {
+                log.timestamp = new Date();
+              }
         }
       }
       const logsCreated = await this.equipamentoLogRepository.createMany(
-        data.logs as EquipamentoLog[],
+        data.logs,
         tx
       );
       if (!logsCreated) {
@@ -66,18 +77,51 @@ export class EquipamentoLogService {
     });
   }
 
-  async createEquipamentoLog(data: EquipamentoLog): Promise<EquipamentoLog> {
+  async createEquipamentoLog(data: CreateEquipamentoLogDTO): Promise<EquipamentoLog> {
     return this.equipamentoLogRepository.create(data);
   }
 
   async updateEquipamentoLog(
     id: number,
-    data: Partial<EquipamentoLog>
+    data: UpdateEquipamentoLogDTO
   ): Promise<EquipamentoLog> {
     return this.equipamentoLogRepository.update(id, data);
   }
 
   async deleteEquipamentoLog(id: number): Promise<void> {
     await this.equipamentoLogRepository.delete(id);
+  }
+
+  async getLogsTableData(id_equipamento: number): Promise<any> {
+    const columns  = await this.equipamentoMetricaRepository.findByEquipamentoId(id_equipamento);
+    const groupedLogs = await this.equipamentoLogRepository.findGroupedByTimestamp(id_equipamento);
+    
+    // Create timestamp column
+    const columnsArray = [
+      {
+        field: 'timestamp',
+        headerName: 'Timestamp',
+        flex: 1,
+        disableColumnMenu: true,
+        type: 'dateTime'
+      }
+    ];
+    // Add metric columns
+    columns.forEach((column) => {
+      if (column.metrica?.nome) {
+        columnsArray.push({
+          field: `metrica_${column.id_metrica}`,
+          headerName: `${column.metrica.nome} (${column.metrica.unidade})`,
+          flex: 1,
+          disableColumnMenu: true,
+          type: 'number'
+        });
+      }
+    });
+    
+    return { 
+      columns: columnsArray,
+      rows: groupedLogs
+    };
   }
 }

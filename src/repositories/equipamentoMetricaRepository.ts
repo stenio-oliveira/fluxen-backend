@@ -1,6 +1,8 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../index';
 import { EquipamentoMetrica } from '../types/EquipamentoMetrica';
+import { CreateEquipamentoMetricaDTO } from '../dto/ServiceDTOS/CreateEquipamentoMetricaDTO';
+import { UpdateEquipamentoMetricaDTO } from '../dto/ServiceDTOS/UpdateEquipamentoMetricaDTO';
 
 export class EquipamentoMetricaRepository {
   async findAll(tx?: Prisma.TransactionClient): Promise<EquipamentoMetrica[]> {
@@ -26,17 +28,18 @@ export class EquipamentoMetricaRepository {
 
   async findByEquipamentoId(id_equipamento: number, tx?: Prisma.TransactionClient): Promise<EquipamentoMetrica[]> {
     if (tx) {
-      return tx.equipamento_metricas.findMany({ where: { id_equipamento } });
+      return tx.equipamento_metricas.findMany({ where: { id_equipamento }, include: { metrica: true } });
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.equipamento_metricas.findMany({ where: { id_equipamento } });
+      return tx.equipamento_metricas.findMany({ where: { id_equipamento }, include: { metrica: true } });
     });
   }
 
   async create(
-    data: EquipamentoMetrica,
+    data: CreateEquipamentoMetricaDTO,
     tx?: Prisma.TransactionClient
   ): Promise<EquipamentoMetrica> {
+
     if (tx) {
       return tx.equipamento_metricas.create({ data });
     }
@@ -47,10 +50,10 @@ export class EquipamentoMetricaRepository {
 
   async update(
     id: number,
-    data: Partial<EquipamentoMetrica>,
+    data: UpdateEquipamentoMetricaDTO,
     tx?: Prisma.TransactionClient
   ): Promise<EquipamentoMetrica> {
-    console.log("EquipamentoMetricaRepository - update - data: ", data);
+    
     if (tx) {
       return tx.equipamento_metricas.update({ where: { id }, data });
     }
