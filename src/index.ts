@@ -1,6 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import authRouter from './routers/authRouter';
+import clienteRouter from './routers/clienteRouter';
 import equipamentoLogRouter from './routers/equipamentoLogRouter';
 import equipamentoMetricaRouter from './routers/equipamentoMetricaRouter';
 import equipamentoRouter from './routers/equipamentoRouter';
@@ -44,6 +45,7 @@ prisma.$connect()
 
 // Apply routers
 app.use('/api', authRouter);
+app.use('/api', clienteRouter);
 app.use('/api', equipamentoLogRouter);
 app.use('/api', equipamentoMetricaRouter);
 app.use('/api', equipamentoRouter);

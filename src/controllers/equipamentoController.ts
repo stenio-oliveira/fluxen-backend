@@ -15,8 +15,15 @@ export class EquipamentoController {
 
   async getEquipamentos(req: Request, res: Response): Promise<void> {
     const filters : EquipmentFilters = req.query ? req.query as any: {};
+    const userId = req.query.userId as string;
+    
+    console.log('EquipamentoController.getEquipamentos - userId header:', userId);
+    console.log('EquipamentoController.getEquipamentos - filters:', filters);
+    console.log('EquipamentoController.getEquipamentos - req.headers:', req.headers);
+    
     try {
-      const equipamentos = await this.equipamentoService.getEquipamentos(filters);
+      const equipamentos = await this.equipamentoService.getEquipamentos(Number(userId), filters);
+      console.log('EquipamentoController.getEquipamentos - result:', equipamentos);
       res.json(equipamentos);
     } catch (error) {
       console.error('Erro em getEquipamentos:', error);

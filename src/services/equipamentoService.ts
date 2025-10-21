@@ -1,12 +1,31 @@
 import { EquipmentFilters } from '../controllers/equipamentoController';
 import { EquipamentoRepository } from '../repositories/equipamentoRepository';
+import { UsuarioRepository } from '../repositories/usuarioRepository';
 import { Equipamento } from '../types/Equipamento';
+import { Usuario } from '../types/Usuario';
 
 export class EquipamentoService {
   private equipamentoRepository = new EquipamentoRepository();
+  private usuarioRepository = new UsuarioRepository();
 
-  async getEquipamentos(filters: EquipmentFilters): Promise<Equipamento[] | void[]> {
-    return this.equipamentoRepository.findAll(filters);
+  async getEquipamentos(userId: number, filters: EquipmentFilters): Promise<Equipamento[] | void[]> {
+    console.log('EquipamentoService.getEquipamentos - userId:', userId);
+    console.log('EquipamentoService.getEquipamentos - filters:', filters);
+    
+    const porifleList = await this.usuarioRepository.findProfileList(userId);
+    console.log('EquipamentoService.getEquipamentos - profiles:', porifleList);
+    
+    const isResponsable = porifleList.some(profile => profile.perfil?.nome === 'Responsável');
+    console.log('EquipamentoService.getEquipamentos - isResponsable:', isResponsable);
+    
+    if(isResponsable) {
+      const result = await this.equipamentoRepository.findByResponsableUser(userId, filters);
+      console.log('EquipamentoService.getEquipamentos - findByResponsableUser result:', result);
+      return result;
+    }
+    const result = await this.equipamentoRepository.findAll(filters);
+    console.log('EquipamentoService.getEquipamentos - findAll result:', result);
+    return result;
   }
 
   async getEquipamentoById(id: number): Promise<Equipamento | null> {

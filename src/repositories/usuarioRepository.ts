@@ -2,6 +2,7 @@ import { prisma } from '..';
 import { ClientesFilters } from '../controllers/usuarioController';
 import { Usuario } from '../types/Usuario';
 import { Prisma } from '@prisma/client';
+import { UsuarioPerfil } from '../types/UsuarioPerfil';
 
 export class UsuarioRepository {
   async findAll(): Promise<Usuario[]> {
@@ -105,7 +106,13 @@ export class UsuarioRepository {
 
   async findById(id: number): Promise<Usuario | null> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario.findUnique({ where: { id } });
+      return tx.usuario.findUnique({ where: { id },   });
+    });
+  }
+
+  async findProfileList(id: number): Promise<UsuarioPerfil[]> {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      return tx.usuario_perfil.findMany({ where: { id_usuario: id }, include: { perfil: true } });
     });
   }
 

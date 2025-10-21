@@ -4,6 +4,35 @@ import { Equipamento } from '../types/Equipamento';
 import { EquipmentFilters } from '../controllers/equipamentoController';
 
 export class EquipamentoRepository {
+
+  findByResponsableUser = async (
+    userId: number,
+    filters: EquipmentFilters
+  ): Promise<Equipamento[] | void[]> => {
+    const { generalFilter, columnFilters } = filters;
+    const client = await prisma.cliente.findFirst({ where: { id_responsavel: userId } });
+    const where: Prisma.equipamentoWhereInput = {
+      AND: [
+        this.buildGeneralFilter(generalFilter),
+        this.buildColumnFilters(columnFilters),
+        { 
+          id_cliente: client?.id,
+        }
+      ],
+    };
+    const equips = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        return tx.equipamento
+          .findMany({
+            include: this.include(),
+            where,
+          })
+          .then(this.formatArray);
+      }
+    );
+    return equips;
+  };
+
   findAll = async (
     filters: EquipmentFilters
   ): Promise<Equipamento[] | void[]> => {
@@ -14,7 +43,6 @@ export class EquipamentoRepository {
         this.buildColumnFilters(columnFilters),
       ],
     };
-    console.log("generalFilter", this.buildGeneralFilter(generalFilter));
     const equips = await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         return tx.equipamento
@@ -31,7 +59,7 @@ export class EquipamentoRepository {
 
   include = (): Prisma.equipamentoInclude => {
     return {
-      usuario: true,
+      cliente: true,
     };
   };
 
@@ -53,7 +81,7 @@ export class EquipamentoRepository {
         .create({
           data: {
             nome: nome,
-            id_usuario: Number(id_usuario),
+            id_cliente: Number(id_usuario),
           },
           include: this.include(),
         })
@@ -89,10 +117,9 @@ export class EquipamentoRepository {
           },
         },
         {
-          usuario: {
+          cliente: {
             OR: [
-              { nome: { contains: generalFilter } },
-              { email: { contains: generalFilter } },
+              { nome: { contains: generalFilter } }
             ],
           },
         },
@@ -113,7 +140,7 @@ export class EquipamentoRepository {
       filters.nome = { contains: columnFilters.nome };
     }
     if (columnFilters?.cliente_nome && columnFilters?.cliente_nome !== "") {
-      filters.usuario = {
+      filters.cliente = {
         OR: [{ nome: { contains: columnFilters.cliente_nome } }],
       };
     }
@@ -123,8 +150,8 @@ export class EquipamentoRepository {
   format = (equipamento: Equipamento | any): Equipamento => {
     return {
       ...equipamento,
-      cliente: equipamento.usuario,
-      cliente_nome: equipamento.usuario?.nome,
+      cliente: equipamento.cliente,
+      cliente_nome: equipamento.cliente?.nome,
     };
   };
 
