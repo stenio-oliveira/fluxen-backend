@@ -36,27 +36,6 @@ export class UsuarioController {
     }
   }
 
-  async getClientes(req: Request, res: Response): Promise<void> {
-    try {
-      const clientes = await this.usuarioService.getClientUsers();
-      res.json(clientes);
-    } catch (error) {
-      console.error("Erro em getClientes:", error);
-      res.status(500).json({ message: "Erro ao buscar clientes" });
-    }
-  }
-
-  async getClientUsers (req: Request, res: Response): Promise<void> {
-    try {
-      const filters : ClientesFilters = req.query ? req.query as any: {};
-      console.log("getClientUsers - filters", filters);
-      const clientUsers = await this.usuarioService.getClientUsers(filters);
-      res.json(clientUsers);
-    } catch (error) {
-      console.error("Erro em getClientUsers:", error);
-      res.status(500).json({ message: "Erro ao buscar usuários" });
-    }
-  };
   async getClienteByEquipamentoId(req: Request, res: Response): Promise<void> {
     try {
       const { id_equipamento } = req.params;

@@ -11,10 +11,7 @@ router.get(
   "/usuarios/:id",
   usuarioController.getUsuarioById.bind(usuarioController)
 );
-router.get(
-  "/usuarios/perfil/clientes",
-  usuarioController.getClientUsers.bind(usuarioController)
-);
+
 
 router.post(
   "/usuarios",

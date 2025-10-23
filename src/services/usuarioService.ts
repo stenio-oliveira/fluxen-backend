@@ -13,9 +13,7 @@ export class UsuarioService {
     return result;
   }
 
-  async getClientUsers(filters?: ClientesFilters): Promise<Usuario[]> {
-    return this.usuarioRepository.findClientUsers(filters);
-  }
+ 
 
   async getClienteByEquipamentoId(id_equipamento: number): Promise<Usuario | null> {
     return this.usuarioRepository.findByEquipamentoId(id_equipamento);
