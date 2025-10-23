@@ -47,21 +47,31 @@ export class EquipamentoLogService {
           log.id_metrica || 0
         );
         if (equipamentoMetrica) {
-              const range_original_min = 0;
-              const range_original_max = 4096;
-              const { valor } = log;
-              const { valor_minimo, valor_maximo } = equipamentoMetrica;
-              
-              log.valor_convertido =
-                ((Number(valor) - range_original_min) * (valor_maximo - valor_minimo)) /
-                (range_original_max - range_original_min) +
-                valor_minimo;
-              log.id_equipamento_metrica = equipamentoMetrica.id;
-              
-              // Se não foi fornecido timestamp, usar o atual
-              if (!log.timestamp) {
-                log.timestamp = new Date();
-              }
+          const range_original_min = 0;
+          const range_original_max = 4096;
+          const { valor } = log;
+          const { valor_minimo, valor_maximo } = equipamentoMetrica;
+
+          // Verificar se valor_convertido já foi fornecido
+          if (log.valor_convertido !== undefined && log.valor_convertido !== null) {
+            // Se valor_convertido está preenchido, usar ele diretamente
+            // O valor bruto permanece como está
+            console.log(`Log ${log.id_metrica}: Usando valor_convertido fornecido: ${log.valor_convertido}`);
+          } else {
+          // Se valor_convertido não foi fornecido, calcular usando regra de 3
+            log.valor_convertido =
+              ((Number(valor) - range_original_min) * (valor_maximo - valor_minimo)) /
+              (range_original_max - range_original_min) +
+              valor_minimo;
+            console.log(`Log ${log.id_metrica}: Calculando valor_convertido: ${log.valor_convertido} (valor bruto: ${valor})`);
+          }
+
+          log.id_equipamento_metrica = equipamentoMetrica.id;
+
+          // Se não foi fornecido timestamp, usar o atual
+          if (!log.timestamp) {
+            log.timestamp = new Date();
+          }
         }
       }
       const logsCreated = await this.equipamentoLogRepository.createMany(

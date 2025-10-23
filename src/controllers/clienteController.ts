@@ -6,10 +6,31 @@ export class ClienteController {
   private clienteService = new ClienteService();
 
   async getClientes(req: Request, res: Response): Promise<void> {
+    console.log('=== CLIENTE CONTROLLER ===');
+    console.log('ClienteController.getClientes - req query:', req.query);
+    console.log('ClienteController.getClientes - req user:', req.user);
+    console.log('ClienteController.getClientes - req headers:', req.headers);
+
     const filters: ClienteFilters = req.query ? req.query as any : {};
-    const userId = req.headers['userId'] as string;
+    const userId = req.query['userId'];
+    console.log('ClienteController.getClientes - userId from query:', userId);
+
+    // Se não há userId no query, tentar pegar do token decodificado
+    const userIdFromToken = req.user?.id;
+    console.log('ClienteController.getClientes - userId from token:', userIdFromToken);
+
+    const finalUserId = userId || userIdFromToken;
+    console.log('ClienteController.getClientes - final userId:', finalUserId);
+
+    if (!finalUserId) {
+      console.error('No userId provided');
+      res.status(400).json({ message: 'User ID is required' });
+      return;
+    }
+
     try {
-      const clientes = await this.clienteService.getClientes(Number(userId), filters);
+      const clientes = await this.clienteService.getClientes(Number(finalUserId), filters);
+      console.log('ClienteController.getClientes - result:', clientes);
       res.json(clientes);
     } catch (error) {
       console.error('Erro em getClientes:', error);

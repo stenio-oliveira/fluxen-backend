@@ -1,48 +1,53 @@
 import { prisma } from '..';
-import { ClientesFilters } from '../controllers/usuarioController';
+import { ClientesFilters, UserFilters } from '../controllers/usuarioController';
 import { Usuario } from '../types/Usuario';
 import { Prisma } from '@prisma/client';
 import { UsuarioPerfil } from '../types/UsuarioPerfil';
+import bcrypt from 'bcrypt';
 
 export class UsuarioRepository {
-  async findAll(): Promise<Usuario[]> {
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario.findMany();
-    });
-  }
 
-  async findClientUsers(
-    filters?: ClientesFilters,
-    tx?: Prisma.TransactionClient
-  ): Promise<Usuario[]> {
-    if (!tx) {
-      return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+  include = (): Prisma.usuarioInclude => {
+    return {
+      usuario_perfil: { include: { perfil: true } },
+    };
+  };
 
-        
+  format = (usuario: any): Usuario => {
+    return {
+      ...usuario,
+      perfil_nome: usuario.usuario_perfil?.[0]?.perfil?.nome,
+    };
+  };
 
-    const where: Prisma.usuarioWhereInput | {} = filters
-      ? {
+  async findAll(filters?: UserFilters, tx?: Prisma.TransactionClient): Promise<Usuario[]> {
+    if (tx) {
+      const where: Prisma.usuarioWhereInput = filters
+        ? {
           AND: [
             this.buildGeneralFilter(filters.generalFilter),
             this.buildColumnFilters(filters.columnFilters),
           ],
         }
-      : {};
+        : {};
 
-    console.log("where", where);
-        return tx.usuario.findMany({
-          where: {
-            ...where,
-            usuario_perfil: { some: { id_perfil: { equals: 2 } } },
-          },
-        });
-      });
+      console.log('UsuarioRepository.findAll - where:', where);
+      const usuarios = await tx.usuario.findMany({ where, include: this.include() });
+      return usuarios.map(usuario => this.format(usuario));
     }
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const where: Prisma.usuarioWhereInput = filters
+        ? {
+          AND: [
+            this.buildGeneralFilter(filters.generalFilter),
+            this.buildColumnFilters(filters.columnFilters),
+          ],
+        }
+        : {};
 
-    return tx.usuario.findMany({
-      where: {
-        usuario_perfil: { some: { id_perfil: { equals: 2 } } },
-      },
+      console.log('UsuarioRepository.findAll - where:', where);
+      const usuarios = await tx.usuario.findMany({ where, include: this.include() });
+      return usuarios.map(usuario => this.format(usuario));
     });
   }
 
@@ -83,7 +88,8 @@ export class UsuarioRepository {
   async findByEmail(email: string): Promise<Usuario | null> {
     const user = await prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        return tx.usuario.findFirst({ where: { email } });
+        const usuario = await tx.usuario.findFirst({ where: { email }, include: this.include() });
+        return usuario ? this.format(usuario) : null;
       }
     );
     return user;
@@ -95,10 +101,16 @@ export class UsuarioRepository {
         const equip = await tx.equipamento.findFirst({
           where: { id: id_equipamento },
           include: {
-            usuario: true,
+            cliente: {
+              include: {
+                usuario: {
+                  include: this.include(),
+                },
+              },
+            },
           },
         });
-        return equip?.usuario || null;
+        return equip?.cliente?.usuario ? this.format(equip.cliente.usuario) : null;
       }
     );
     return user;
@@ -106,42 +118,91 @@ export class UsuarioRepository {
 
   async findById(id: number): Promise<Usuario | null> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario.findUnique({ where: { id },   });
+      const usuario = await tx.usuario.findUnique({ where: { id }, include: this.include() });
+      return usuario ? this.format(usuario) : null;
     });
   }
 
-  async findProfileList(id: number): Promise<UsuarioPerfil[]> {
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario_perfil.findMany({ where: { id_usuario: id }, include: { perfil: true } });
-    });
-  }
+  async findProfileList(id: number, tx?: Prisma.TransactionClient): Promise<UsuarioPerfil[]> {
+    console.log('=== USUARIO REPOSITORY ===');
+    console.log('findProfileList - id:', id);
+    console.log('findProfileList - tx:', tx ? 'provided' : 'not provided');
 
-  async create(data: Usuario): Promise<Usuario> {
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario.create({ data });
-    });
-  }
+    try {
+      if (tx) {
+        const result = await tx.usuario_perfil.findMany({ where: { id_usuario: id }, include: { perfil: true } });
+        console.log('findProfileList result (with tx):', result);
+        return result;
+      }
 
-  async createClient (data: Usuario, tx?: Prisma.TransactionClient): Promise<Usuario> {
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const newUser = await tx.usuario.create({ data });
-      const newUserPerfil = await tx.usuario_perfil.create({
-        data: {
-          id_perfil: 2,
-          id_usuario: newUser.id,
-        },
+      const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        return tx.usuario_perfil.findMany({ where: { id_usuario: id }, include: { perfil: true } });
       });
-      console.log('createClient: ', { 
-        newUser,
-        newUserPerfil
-      })
-      return newUser;
+      console.log('findProfileList result (new tx):', result);
+      return result;
+    } catch (error) {
+      console.error('Error in findProfileList:', error);
+      throw error;
+    }
+  }
+
+  async create(data: Usuario & { id_perfil?: number }, tx?: Prisma.TransactionClient): Promise<Usuario> {
+    if (tx) {
+      data.senha = await bcrypt.hash(data.senha, 10);
+      const { id_perfil, ...rest } = data;
+      const newUser = await tx.usuario.create({
+        data: {
+          ...rest,
+        },
+        include: this.include()
+      });
+      if (data.id_perfil) {
+        await tx.usuario_perfil.create({ data: { id_perfil: data.id_perfil, id_usuario: newUser.id } });
+      }
+      return this.format(newUser);
+    }
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      data.senha = await bcrypt.hash(data.senha, 10);
+      const { id_perfil, ...rest } = data;
+      const newUser = await tx.usuario.create({
+        data: {
+          ...rest,
+        },
+        include: this.include()
+      });
+      // Se um perfil foi especificado, criar o vínculo
+      if (data.id_perfil) {
+        await tx.usuario_perfil.create({
+          data: {
+            id_perfil: data.id_perfil,
+            id_usuario: newUser.id,
+          },
+        });
+      }
+
+      return this.format(newUser);
     });
   }
 
-  async update(id: number, data: Partial<Usuario>): Promise<Usuario> {
+  async update(id: number, data: Partial<Usuario>, tx?: Prisma.TransactionClient): Promise<Usuario> {
+    if (tx) {
+      const usuario = await tx.usuario.update({ where: { id }, data, include: this.include() });
+      return this.format(usuario);
+    }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario.update({ where: { id }, data });
+      const usuario = await tx.usuario.update({ where: { id }, data, include: this.include() });
+      return this.format(usuario);
+    });
+  }
+
+  async isAdmin(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
+    if (tx) {
+      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 1 } });
+      return usuario_perfil ? true : false;
+    }
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 1 } });
+      return usuario_perfil ? true : false;
     });
   }
 

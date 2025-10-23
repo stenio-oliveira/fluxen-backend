@@ -20,10 +20,6 @@ router.post(
   "/usuarios",
   usuarioController.createUsuario.bind(usuarioController)
 );
-router.post(
-  "/usuarios/cliente",
-  usuarioController.createClient.bind(usuarioController)
-);
 router.put(
   "/usuarios/:id",
   usuarioController.updateUsuario.bind(usuarioController)

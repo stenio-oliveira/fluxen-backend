@@ -1,35 +1,39 @@
 import { prisma } from '../index';
+import { Perfil } from '../types/Perfil';
 import { UsuarioPerfil } from '../types/UsuarioPerfil';
 import { Prisma } from '@prisma/client';
 
 export class UsuarioPerfilRepository {
-  async findAll(): Promise<UsuarioPerfil[]> {
+  async findAll(): Promise<Perfil[]> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario_perfil.findMany();
+      return tx.perfil.findMany();
     });
   }
 
-  async findById(id: number): Promise<UsuarioPerfil | null> {
+  async findById(id: number): Promise<Perfil | null> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario_perfil.findUnique({ where: { id } });
+      return tx.perfil.findUnique({ where: { id } });
     });
   }
 
-  async create(data: UsuarioPerfil): Promise<UsuarioPerfil> {
+  async create(data: Partial<Perfil>): Promise<Perfil> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario_perfil.create({ data });
+      return tx.perfil.create({ data : { 
+        nome: data.nome || '',
+        descricao: data.descricao || '',
+      } });
     });
   }
 
-  async update(id: number, data: Partial<UsuarioPerfil>): Promise<UsuarioPerfil> {
+  async update(id: number, data: Partial<Perfil>): Promise<Perfil> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.usuario_perfil.update({ where: { id }, data });
+      return tx.perfil.update({ where: { id }, data });
     });
   }
 
   async delete(id: number): Promise<void> {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      await tx.usuario_perfil.delete({ where: { id } });
+      await tx.perfil.delete({ where: { id } });
     });
   }
 }

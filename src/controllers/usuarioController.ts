@@ -11,12 +11,24 @@ export interface ClientesFilters {
   };
   generalFilter: string;
 }
+
+export interface UserFilters {
+  columnFilters: {
+    id: string | null;
+    nome: string | null;
+    email: string | null;
+    username: string | null;
+  };
+  generalFilter: string;
+}
 export class UsuarioController {
   private usuarioService = new UsuarioService();
 
   async getUsuarios(req: Request, res: Response): Promise<void> {
     try {
-      const usuarios = await this.usuarioService.getUsuarios();
+      const filters: UserFilters = req.query ? req.query as any: {};
+      const userId = req.query.userId as string; 
+      const usuarios = await this.usuarioService.getUsuarios(Number(userId), filters);
       res.json(usuarios);
     } catch (error) {
       console.error("Erro em getUsuarios:", error);
@@ -80,16 +92,6 @@ export class UsuarioController {
     } catch (error) {
       console.error("Erro em createUsuario:", error);
       res.status(500).json({ message: "Erro ao criar usuário" });
-    }
-  }
-
-  async createClient(req: Request, res: Response): Promise<void> {
-    try {
-      const usuario = await this.usuarioService.createClient(req.body);
-      res.status(201).json(usuario);
-    } catch (error) {
-      console.error("Erro em createClient:", error);
-      res.status(500).json({ message: "Erro ao criar cliente" });
     }
   }
 

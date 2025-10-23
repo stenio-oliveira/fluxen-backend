@@ -4,5 +4,5 @@ export interface Usuario {
   email: string;
   senha: string;
   username: string;
-  
+  perfil_nome?: string;
 }

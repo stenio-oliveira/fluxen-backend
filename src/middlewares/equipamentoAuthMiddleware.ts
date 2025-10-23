@@ -21,7 +21,7 @@ export const authenticateEquipamento = async (req: Request, res: Response, next:
     const equipamento = await prisma.equipamento.findFirst({
       where: { api_key: { equals: apiKey } },
       include: {
-        usuario: true,
+        cliente: true,
         equipamento_metricas: {
           include: {
             metrica: true

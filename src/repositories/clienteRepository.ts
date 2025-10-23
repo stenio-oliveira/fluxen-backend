@@ -16,7 +16,8 @@ export class ClienteRepository {
 
   findByResponsableUser = async (
     userId: number,
-    filters: ClienteFilters
+    filters: ClienteFilters,
+    tx?: Prisma.TransactionClient
   ): Promise<Cliente[] | void[]> => {
     const { generalFilter, columnFilters } = filters;
     const where: Prisma.clienteWhereInput = {
@@ -28,7 +29,17 @@ export class ClienteRepository {
         }
       ],
     };
-    const clientes = await prisma.$transaction(
+
+    if (tx) {
+      return tx.cliente
+        .findMany({
+          include: this.include(),
+          where,
+        })
+        .then(this.formatArray);
+    }
+
+    return prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         return tx.cliente
           .findMany({
@@ -38,11 +49,11 @@ export class ClienteRepository {
           .then(this.formatArray);
       }
     );
-    return clientes;
   };
 
   findAll = async (
-    filters: ClienteFilters
+    filters: ClienteFilters,
+    tx?: Prisma.TransactionClient
   ): Promise<Cliente[] | void[]> => {
     const { generalFilter, columnFilters } = filters;
     const where: Prisma.clienteWhereInput = {
@@ -51,7 +62,17 @@ export class ClienteRepository {
         this.buildColumnFilters(columnFilters),
       ],
     };
-    const clientes = await prisma.$transaction(
+
+    if (tx) {
+      return tx.cliente
+        .findMany({
+          include: this.include(),
+          where,
+        })
+        .then(this.formatArray);
+    }
+
+    return prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         return tx.cliente
           .findMany({
@@ -61,8 +82,6 @@ export class ClienteRepository {
           .then(this.formatArray);
       }
     );
-
-    return clientes;
   };
 
   include = (): Prisma.clienteInclude => {
@@ -71,7 +90,13 @@ export class ClienteRepository {
     };
   };
 
-  findById = async (id: number): Promise<Cliente | null> => {
+  findById = async (id: number, tx?: Prisma.TransactionClient): Promise<Cliente | null> => {
+    if (tx) {
+      return tx.cliente
+        .findUnique({ where: { id }, include: this.include() })
+        .then((cliente) => this.format(cliente));
+    }
+
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       return tx.cliente
         .findUnique({ where: { id }, include: this.include() })
@@ -79,16 +104,29 @@ export class ClienteRepository {
     });
   };
 
-  create = async (data: Partial<Cliente>): Promise<Cliente | null> => {
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const { nome, cnpj, id_responsavel } = data;
-      if (!nome || nome === "") {
-        throw new Error(`Erro ao criar cliente: nome é obrigatório`);
-      }
+  create = async (data: Partial<Cliente>, tx?: Prisma.TransactionClient): Promise<Cliente | null> => {
+    const { nome, cnpj, id_responsavel } = data;
+    if (!nome || nome === "") {
+      throw new Error(`Erro ao criar cliente: nome é obrigatório`);
+    }
+
+    if (tx) {
       return tx.cliente
         .create({
           data: {
-            id: data.id || 0, // Prisma vai gerar automaticamente se não fornecido
+            nome: nome,
+            cnpj: cnpj || null,
+            id_responsavel: id_responsavel || null,
+          },
+          include: this.include(),
+        })
+        .then((cliente) => this.format(cliente));
+    }
+
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      return tx.cliente
+        .create({
+          data: {
             nome: nome,
             cnpj: cnpj || null,
             id_responsavel: id_responsavel || null,
@@ -99,7 +137,13 @@ export class ClienteRepository {
     });
   };
 
-  update = async (id: number, data: any): Promise<Cliente> => {
+  update = async (id: number, data: any, tx?: Prisma.TransactionClient): Promise<Cliente> => {
+    if (tx) {
+      return tx.cliente
+        .update({ where: { id }, data, include: this.include() })
+        .then(this.format);
+    }
+
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       return tx.cliente
         .update({ where: { id }, data, include: this.include() })

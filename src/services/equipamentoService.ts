@@ -12,10 +12,10 @@ export class EquipamentoService {
     console.log('EquipamentoService.getEquipamentos - userId:', userId);
     console.log('EquipamentoService.getEquipamentos - filters:', filters);
     
-    const porifleList = await this.usuarioRepository.findProfileList(userId);
-    console.log('EquipamentoService.getEquipamentos - profiles:', porifleList);
+    const profileList = await this.usuarioRepository.findProfileList(userId);
+    console.log('EquipamentoService.getEquipamentos - profiles:', profileList);
     
-    const isResponsable = porifleList.some(profile => profile.perfil?.nome === 'Responsável');
+    const isResponsable = profileList.some(profile => profile.perfil?.nome === 'Responsável');
     console.log('EquipamentoService.getEquipamentos - isResponsable:', isResponsable);
     
     if(isResponsable) {

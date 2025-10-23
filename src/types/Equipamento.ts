@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 export interface Equipamento {
   id: number;
   nome: string;
-  id_usuario: number;
+  id_cliente: number;
 
   //usuario
   usuario?: Usuario;

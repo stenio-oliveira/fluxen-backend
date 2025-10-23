@@ -7,7 +7,8 @@ export class EquipamentoRepository {
 
   findByResponsableUser = async (
     userId: number,
-    filters: EquipmentFilters
+    filters: EquipmentFilters,
+    tx?: Prisma.TransactionClient
   ): Promise<Equipamento[] | void[]> => {
     const { generalFilter, columnFilters } = filters;
     const client = await prisma.cliente.findFirst({ where: { id_responsavel: userId } });
@@ -20,7 +21,17 @@ export class EquipamentoRepository {
         }
       ],
     };
-    const equips = await prisma.$transaction(
+
+    if (tx) {
+      return tx.equipamento
+        .findMany({
+          include: this.include(),
+          where,
+        })
+        .then(this.formatArray);
+    }
+
+    return prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         return tx.equipamento
           .findMany({
@@ -30,11 +41,11 @@ export class EquipamentoRepository {
           .then(this.formatArray);
       }
     );
-    return equips;
   };
 
   findAll = async (
-    filters: EquipmentFilters
+    filters: EquipmentFilters,
+    tx?: Prisma.TransactionClient
   ): Promise<Equipamento[] | void[]> => {
     const { generalFilter, columnFilters } = filters;
     const where: Prisma.equipamentoWhereInput = {
@@ -43,7 +54,17 @@ export class EquipamentoRepository {
         this.buildColumnFilters(columnFilters),
       ],
     };
-    const equips = await prisma.$transaction(
+
+    if (tx) {
+      return tx.equipamento
+        .findMany({
+          include: this.include(),
+          where,
+        })
+        .then(this.formatArray);
+    }
+
+    return prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
         return tx.equipamento
           .findMany({
@@ -53,17 +74,25 @@ export class EquipamentoRepository {
           .then(this.formatArray);
       }
     );
-
-    return equips;
   };
 
   include = (): Prisma.equipamentoInclude => {
     return {
-      cliente: true,
+      cliente: {
+        include: {
+          usuario: true,
+        },
+      },
     };
   };
 
-  findById = async (id: number): Promise<Equipamento | null> => {
+  findById = async (id: number, tx?: Prisma.TransactionClient): Promise<Equipamento | null> => {
+    if (tx) {
+      return tx.equipamento
+        .findUnique({ where: { id }, include: this.include() })
+        .then((equipamento) => this.format(equipamento));
+    }
+
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       return tx.equipamento
         .findUnique({ where: { id }, include: this.include() })
@@ -71,34 +100,75 @@ export class EquipamentoRepository {
     });
   };
 
-  create = async (data: Partial<Equipamento>): Promise<Equipamento | null> => {
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const { nome, id_usuario } = data;
-      if (!id_usuario || !nome || nome === "") {
-        throw new Error(`Erro ao criar equipamento: dados insuficientes`);
-      }
+  create = async (data: Partial<Equipamento>, tx?: Prisma.TransactionClient): Promise<Equipamento | null> => {
+    // Gerar API key automaticamente
+    const generateApiKey = (equipamentoId: number): string => {
+      return `eq_${equipamentoId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    };
+    if (tx) {
       return tx.equipamento
         .create({
           data: {
-            nome: nome,
-            id_cliente: Number(id_usuario),
+            nome: data.nome || '',
+            id_cliente: data.id_cliente,
+            api_key: null, // Será atualizado após a criação
           },
           include: this.include(),
         })
-        .then((equipamento) => this.format(equipamento));
+        .then(async (equipamento) => {
+          // Gerar e atualizar a API key
+          const apiKey = generateApiKey(equipamento.id);
+          const updatedEquipamento = await tx.equipamento.update({
+            where: { id: equipamento.id },
+            data: { api_key: apiKey },
+            include: this.include(),
+          });
+          return this.format(updatedEquipamento);
+        });
+    }
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      return tx.equipamento
+        .create({
+          data: {
+            nome: data.nome || '',
+            id_cliente: data.id_cliente,
+            api_key: null, // Será atualizado após a criação
+          },
+          include: this.include(),
+        })
+        .then(async (equipamento) => {
+          // Gerar e atualizar a API key
+          const apiKey = generateApiKey(equipamento.id);
+          const updatedEquipamento = await tx.equipamento.update({
+            where: { id: equipamento.id },
+            data: { api_key: apiKey },
+            include: this.include(),
+          });
+          return this.format(updatedEquipamento);
+        });
     });
   };
 
-  update = async (id: number, data: any): Promise<Equipamento> => {
+  update = async (id: number, data: any, tx?: Prisma.TransactionClient): Promise<Equipamento> => {
+    if (tx) {
+      return tx.equipamento
+        .update({ where: { id }, data, include: this.include() })
+        .then(this.format);
+    }
+
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       return tx.equipamento
         .update({ where: { id }, data, include: this.include() })
         .then(this.format);
     });
-    // return prisma.equipamento.update({ where: { id }, data });
   };
 
-  delete = async (id: number): Promise<void> => {
+  delete = async (id: number, tx?: Prisma.TransactionClient): Promise<void> => {
+    if (tx) {
+      await tx.equipamento.delete({ where: { id } });
+      return;
+    }
+
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.equipamento.delete({ where: { id } });
     });
