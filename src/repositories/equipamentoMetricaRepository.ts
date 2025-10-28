@@ -7,10 +7,18 @@ import { UpdateEquipamentoMetricaDTO } from '../dto/ServiceDTOS/UpdateEquipament
 export class EquipamentoMetricaRepository {
   async findAll(tx?: Prisma.TransactionClient): Promise<EquipamentoMetrica[]> {
     if (tx) {
-      return tx.equipamento_metricas.findMany();
+      return tx.equipamento_metricas.findMany({
+        orderBy: {
+          id: 'desc'
+        }
+      });
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.equipamento_metricas.findMany();
+      return tx.equipamento_metricas.findMany({
+        orderBy: {
+          id: 'desc'
+        }
+      });
     });
   }
 
@@ -28,10 +36,22 @@ export class EquipamentoMetricaRepository {
 
   async findByEquipamentoId(id_equipamento: number, tx?: Prisma.TransactionClient): Promise<EquipamentoMetrica[]> {
     if (tx) {
-      return tx.equipamento_metricas.findMany({ where: { id_equipamento }, include: { metrica: true } });
+      return tx.equipamento_metricas.findMany({
+        where: { id_equipamento },
+        include: { metrica: true },
+        orderBy: {
+          id: 'desc'
+        }
+      });
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.equipamento_metricas.findMany({ where: { id_equipamento }, include: { metrica: true } });
+      return tx.equipamento_metricas.findMany({
+        where: { id_equipamento },
+        include: { metrica: true },
+        orderBy: {
+          id: 'desc'
+        }
+      });
     });
   }
 

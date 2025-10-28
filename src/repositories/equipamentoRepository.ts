@@ -27,6 +27,9 @@ export class EquipamentoRepository {
         .findMany({
           include: this.include(),
           where,
+          orderBy: {
+            id: 'desc'
+          }
         })
         .then(this.formatArray);
     }
@@ -37,6 +40,9 @@ export class EquipamentoRepository {
           .findMany({
             include: this.include(),
             where,
+            orderBy: {
+              id: 'desc'
+            }
           })
           .then(this.formatArray);
       }
@@ -60,6 +66,9 @@ export class EquipamentoRepository {
         .findMany({
           include: this.include(),
           where,
+          orderBy: {
+            id: 'desc'
+          }
         })
         .then(this.formatArray);
     }
@@ -70,6 +79,9 @@ export class EquipamentoRepository {
           .findMany({
             include: this.include(),
             where,
+            orderBy: {
+              id: 'desc'
+            }
           })
           .then(this.formatArray);
       }

@@ -32,7 +32,13 @@ export class UsuarioRepository {
         : {};
 
       console.log('UsuarioRepository.findAll - where:', where);
-      const usuarios = await tx.usuario.findMany({ where, include: this.include() });
+      const usuarios = await tx.usuario.findMany({
+        where,
+        include: this.include(),
+        orderBy: {
+          id: 'desc'
+        }
+      });
       return usuarios.map(usuario => this.format(usuario));
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -46,7 +52,13 @@ export class UsuarioRepository {
         : {};
 
       console.log('UsuarioRepository.findAll - where:', where);
-      const usuarios = await tx.usuario.findMany({ where, include: this.include() });
+      const usuarios = await tx.usuario.findMany({
+        where,
+        include: this.include(),
+        orderBy: {
+          id: 'desc'
+        }
+      });
       return usuarios.map(usuario => this.format(usuario));
     });
   }
@@ -192,6 +204,17 @@ export class UsuarioRepository {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const usuario = await tx.usuario.update({ where: { id }, data, include: this.include() });
       return this.format(usuario);
+    });
+  }
+
+  async isResponsable(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
+    if (tx) {
+      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 2 } });
+      return usuario_perfil ? true : false;
+    }
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 2 } });
+      return usuario_perfil ? true : false;
     });
   }
 

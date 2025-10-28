@@ -15,17 +15,20 @@ export class EquipamentoService {
     const profileList = await this.usuarioRepository.findProfileList(userId);
     console.log('EquipamentoService.getEquipamentos - profiles:', profileList);
     
-    const isResponsable = profileList.some(profile => profile.perfil?.nome === 'Responsável');
-    console.log('EquipamentoService.getEquipamentos - isResponsable:', isResponsable);
-    
+    const isAdmin = await this.usuarioRepository.isAdmin(userId);
+    const isResponsable = await this.usuarioRepository.isResponsable(userId);
+
+    if(isAdmin) {
+      const result = await this.equipamentoRepository.findAll(filters);
+      console.log('EquipamentoService.getEquipamentos - findAll result:', result);
+      return result;
+    }
     if(isResponsable) {
       const result = await this.equipamentoRepository.findByResponsableUser(userId, filters);
       console.log('EquipamentoService.getEquipamentos - findByResponsableUser result:', result);
       return result;
     }
-    const result = await this.equipamentoRepository.findAll(filters);
-    console.log('EquipamentoService.getEquipamentos - findAll result:', result);
-    return result;
+    return [];
   }
 
   async getEquipamentoById(id: number): Promise<Equipamento | null> {

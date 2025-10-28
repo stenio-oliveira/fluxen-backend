@@ -116,4 +116,14 @@ export class MetricaController {
       res.status(500).json({ message: 'Erro ao deletar métrica' });
     }
   }
+
+  async getMetricasStats(req: Request, res: Response): Promise<void> {
+    try {
+      const stats = await this.metricaService.getMetricasStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Erro em getMetricasStats:', error);
+      res.status(500).json({ message: 'Erro ao buscar estatísticas das métricas' });
+    }
+  }
 }

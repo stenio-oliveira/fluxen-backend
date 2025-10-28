@@ -35,6 +35,9 @@ export class ClienteRepository {
         .findMany({
           include: this.include(),
           where,
+          orderBy: {
+            id: 'desc'
+          }
         })
         .then(this.formatArray);
     }
@@ -45,6 +48,9 @@ export class ClienteRepository {
           .findMany({
             include: this.include(),
             where,
+            orderBy: {
+              id: 'desc'
+            }
           })
           .then(this.formatArray);
       }
@@ -68,6 +74,9 @@ export class ClienteRepository {
         .findMany({
           include: this.include(),
           where,
+          orderBy: {
+            id: 'desc'
+          }
         })
         .then(this.formatArray);
     }
@@ -78,6 +87,9 @@ export class ClienteRepository {
           .findMany({
             include: this.include(),
             where,
+            orderBy: {
+              id: 'desc'
+            }
           })
           .then(this.formatArray);
       }

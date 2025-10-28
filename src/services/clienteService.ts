@@ -7,22 +7,19 @@ import { prisma } from '..';
 
 export class ClienteService {
   private clienteRepository = new ClienteRepository();
-  private usuarioRepository = new UsuarioRepository();
+  private usuarioRepository = new UsuarioRepository()
 
   async getClientes(userId: number, filters: ClienteFilters): Promise<Cliente[] | void[]> {
     console.log('ClienteService.getClientes - userId:', userId);
-    const profileList = await this.usuarioRepository.findProfileList(userId);
-    const isResponsable = profileList.some(profile => profile.perfil?.nome === 'Responsável');
-
-    console.log('isResponsable', isResponsable);
-
+    const isAdmin = await this.usuarioRepository.isAdmin(userId);
+    const isResponsable = await this.usuarioRepository.isResponsable(userId);
+    if (isAdmin) {
+      return this.clienteRepository.findAll(filters);
+    }
     if (isResponsable) {
-      // Se for responsável, só pode ver clientes que ele é responsável
       return this.clienteRepository.findByResponsableUser(userId, filters);
     }
-    
-    // Se for admin ou outro perfil, pode ver todos os clientes
-    return this.clienteRepository.findAll(filters);
+    return [];
   }
 
   async getClienteById(id: number): Promise<Cliente | null> {
@@ -30,6 +27,11 @@ export class ClienteService {
   }
 
   async createCliente(data: Partial<Cliente>): Promise<Cliente | null> {
+    // Validação obrigatória do responsável
+    if (!data.id_responsavel) {
+      throw new Error('Usuário responsável é obrigatório');
+    }
+
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newCliente = await this.clienteRepository.create(data, tx);
       if (newCliente) {

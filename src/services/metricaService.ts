@@ -49,4 +49,12 @@ export class MetricaService {
   async deleteMetrica(id: number): Promise<void> {
     await this.metricaRepository.delete(id);
   }
+
+  async getMetricasStats(): Promise<{
+    totalMetricas: number;
+    metricasAtivas: number;
+    unidadesUnicas: number;
+  }> {
+    return this.metricaRepository.getMetricasStats();
+  }
 }

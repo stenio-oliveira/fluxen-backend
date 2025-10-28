@@ -128,7 +128,11 @@ export class EquipamentoLogRepository {
               metrica: true
             }
           }
-        }})
+        },
+        orderBy: {
+          timestamp: 'desc'
+        }
+      })
        .then((groups) => { 
          for(let group of groups){ 
            group.equipamento_log.forEach((log : EquipamentoLog) => { 
@@ -148,7 +152,11 @@ export class EquipamentoLogRepository {
               metrica: true
             }
           }
-        }})
+        },
+        orderBy: {
+          timestamp: 'desc'
+        }
+      })
        .then((groups) => { 
          
          for(let group of groups){ 

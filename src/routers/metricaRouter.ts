@@ -6,6 +6,7 @@ const router = Router();
 const metricaController = new MetricaController();
 
 router.get('/metricas', authenticateToken, metricaController.getMetricas.bind(metricaController));
+router.get('/metricas/stats', authenticateToken, metricaController.getMetricasStats.bind(metricaController));
 router.get('/metricas/:id', authenticateToken, metricaController.getMetricaById.bind(metricaController));
 router.get("/metricas/equipamentos/:id_equipamento", authenticateToken, metricaController.getMetricaByEquipamentoId.bind(metricaController));
 

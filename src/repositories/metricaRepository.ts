@@ -20,6 +20,9 @@ export class MetricaRepository {
         include: {
           equipamento_metricas: true,
         },
+        orderBy: {
+          id: 'desc'
+        }
       });
     });
   }
@@ -80,6 +83,9 @@ export class MetricaRepository {
                 where: { id_equipamento },
               },
             },
+            orderBy: {
+              id: 'desc'
+            }
           })
           .then((metricas) =>
             metricas.map((metrica) => ({
@@ -99,6 +105,9 @@ export class MetricaRepository {
             where: { id_equipamento },
           },
         },
+        orderBy: {
+          id: 'desc'
+        }
       })
       .then((metricas) => { 
         console.log("metricas antes de serem formatadas: ", metricas);
@@ -175,6 +184,39 @@ export class MetricaRepository {
   async delete(id: number): Promise<void> {
     await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.metrica.delete({ where: { id } });
+    });
+  }
+
+  async getMetricasStats(): Promise<{
+    totalMetricas: number;
+    metricasAtivas: number;
+    unidadesUnicas: number;
+  }> {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const totalMetricas = await tx.metrica.count();
+
+      const metricasAtivas = await tx.metrica.count({
+        where: {
+          equipamento_metricas: {
+            some: {}
+          }
+        }
+      });
+
+      const unidadesResult = await tx.metrica.findMany({
+        select: {
+          unidade: true
+        },
+        distinct: ['unidade']
+      });
+
+      const unidadesUnicas = unidadesResult.length;
+
+      return {
+        totalMetricas,
+        metricasAtivas,
+        unidadesUnicas
+      };
     });
   }
 }
