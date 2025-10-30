@@ -65,7 +65,7 @@ export class AuthController {
       console.log('correctPass', correctPass);
       if (correctPass) {
         const token = jwt.sign({ id: user.id, email: user.email }, secret, {
-          expiresIn: "2h",
+          expiresIn: "2d",
         });
         console.log('token: ', token)
         console.log('user: ', user)
