@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../index';
+import { logError, logWarn } from '../utils/logger';
 
 // Extend Request interface to include equipamento
 declare global {
@@ -14,6 +15,7 @@ export const authenticateEquipamento = async (req: Request, res: Response, next:
   const apiKey = req.headers['x-api-key'] as string;
 
   if (!apiKey) {
+    logWarn('Equipment authentication failed: missing API key', { path: req.path });
     return res.status(401).json({ message: 'X-API-Key header is missing' });
   }
 
@@ -31,13 +33,14 @@ export const authenticateEquipamento = async (req: Request, res: Response, next:
     });
 
     if (!equipamento) {
+      logWarn('Equipment authentication failed: invalid API key', { path: req.path });
       return res.status(401).json({ message: 'Invalid API key' });
     }
 
     req.equipamento = equipamento;
     next();
   } catch (error) {
-    console.error('Error validating API key:', error);
+    logError('Error validating equipment API key', error, { path: req.path });
     return res.status(500).json({ message: 'Error validating API key' });
   }
 };

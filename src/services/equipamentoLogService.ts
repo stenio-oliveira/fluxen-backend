@@ -53,17 +53,12 @@ export class EquipamentoLogService {
           const { valor_minimo, valor_maximo } = equipamentoMetrica;
 
           // Verificar se valor_convertido já foi fornecido
-          if (log.valor_convertido !== undefined && log.valor_convertido !== null) {
-            // Se valor_convertido está preenchido, usar ele diretamente
-            // O valor bruto permanece como está
-            console.log(`Log ${log.id_metrica}: Usando valor_convertido fornecido: ${log.valor_convertido}`);
-          } else {
+          if (log.valor_convertido === undefined || log.valor_convertido === null) {
           // Se valor_convertido não foi fornecido, calcular usando regra de 3
             log.valor_convertido =
               ((Number(valor) - range_original_min) * (valor_maximo - valor_minimo)) /
               (range_original_max - range_original_min) +
               valor_minimo;
-            console.log(`Log ${log.id_metrica}: Calculando valor_convertido: ${log.valor_convertido} (valor bruto: ${valor})`);
           }
 
           log.id_equipamento_metrica = equipamentoMetrica.id;
@@ -128,7 +123,6 @@ export class EquipamentoLogService {
 
   private checkValueLimits(value: number, metricId: number, metrics: any[]): 'min' | 'max' | 'none' {
     const metric = metrics.find(m => m.id_metrica === metricId);
-    console.log("metric: ", metric);
     if (!metric || !metric.valor_maximo) return 'none';
 
     const range = metric.valor_maximo - metric.valor_minimo;
@@ -146,8 +140,6 @@ export class EquipamentoLogService {
 
   async getLogsTableData(id_equipamento: number): Promise<any> {
     const metrics = await this.equipamentoMetricaRepository.findByEquipamentoId(id_equipamento);
-
-    console.log("columns: ", metrics);
     const groupedLogs = await this.equipamentoLogRepository.findGroupedByTimestamp(id_equipamento);
     // Create timestamp column
     const columnsArray = [
@@ -181,9 +173,6 @@ export class EquipamentoLogService {
 
     let situation: 'working' | 'frozen' = 'working';
     situation = this.getSituation(groupedLogs);
-    // console.log({
-    //   groupedLogs,
-    // })
     
     return { 
       columns: columnsArray,

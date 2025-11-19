@@ -10,7 +10,6 @@ export class ClienteService {
   private usuarioRepository = new UsuarioRepository()
 
   async getClientes(userId: number, filters: ClienteFilters): Promise<Cliente[] | void[]> {
-    console.log('ClienteService.getClientes - userId:', userId);
     const isAdmin = await this.usuarioRepository.isAdmin(userId);
     const isResponsable = await this.usuarioRepository.isResponsable(userId);
     if (isAdmin) {

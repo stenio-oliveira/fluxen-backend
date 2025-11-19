@@ -172,7 +172,6 @@ export class ClienteRepository {
   buildGeneralFilter = (
     generalFilter: string
   ): Prisma.clienteWhereInput => {
-    console.log("generalFilter", generalFilter);
     if (!generalFilter || generalFilter === "") return {};
     return {
       OR: [

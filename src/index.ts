@@ -11,25 +11,24 @@ import usuarioPerfilRouter from './routers/usarioPerfilRouter';
 import usuarioRouter from './routers/usuarioRouter';
 import cors from "cors";
 import morgan from "morgan";
+import { logger, logError, logInfo } from './utils/logger';
 
 const app = express();
 
 app.use(
   cors({
-    origin: "*", // Allow all origins
-    methods: ["GET", "POST", "PUT", "DELETE"], // Specify allowed HTTP methods
-    allowedHeaders: ["Content-Type", "Authorization"], // Specify allowed headers
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-app.use(morgan('dev')); // 'dev' is a predefined format for concise colored output
-
+app.use(morgan('dev'));
 
 export const prisma = new PrismaClient();
 
 app.use(express.json());
 
-// Example route
 app.get('/', (req, res) => {
   res.send('API is running')
 });
@@ -37,10 +36,10 @@ app.get('/', (req, res) => {
 // Test database connection
 prisma.$connect()
   .then(() => {
-    console.log('Database connection successful');
+    logInfo('Database connection established');
   })
   .catch((error) => {
-    console.error('Database connection failed:', error);
+    logError('Database connection failed', error);
   });
 
 // Apply routers
@@ -53,10 +52,9 @@ app.use('/api', metricaRouter);
 app.use('/api', perfilRouter);
 app.use('/api', usuarioPerfilRouter);
 app.use('/api', usuarioRouter);
-  
 
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  logInfo(`Server started on port ${PORT}`);
 });

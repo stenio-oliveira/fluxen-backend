@@ -31,7 +31,6 @@ export class UsuarioRepository {
         }
         : {};
 
-      console.log('UsuarioRepository.findAll - where:', where);
       const usuarios = await tx.usuario.findMany({
         where,
         include: this.include(),
@@ -51,7 +50,6 @@ export class UsuarioRepository {
         }
         : {};
 
-      console.log('UsuarioRepository.findAll - where:', where);
       const usuarios = await tx.usuario.findMany({
         where,
         include: this.include(),
@@ -136,24 +134,15 @@ export class UsuarioRepository {
   }
 
   async findProfileList(id: number, tx?: Prisma.TransactionClient): Promise<UsuarioPerfil[]> {
-    console.log('=== USUARIO REPOSITORY ===');
-    console.log('findProfileList - id:', id);
-    console.log('findProfileList - tx:', tx ? 'provided' : 'not provided');
-
     try {
       if (tx) {
-        const result = await tx.usuario_perfil.findMany({ where: { id_usuario: id }, include: { perfil: true } });
-        console.log('findProfileList result (with tx):', result);
-        return result;
+        return await tx.usuario_perfil.findMany({ where: { id_usuario: id }, include: { perfil: true } });
       }
 
-      const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         return tx.usuario_perfil.findMany({ where: { id_usuario: id }, include: { perfil: true } });
       });
-      console.log('findProfileList result (new tx):', result);
-      return result;
     } catch (error) {
-      console.error('Error in findProfileList:', error);
       throw error;
     }
   }

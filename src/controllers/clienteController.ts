@@ -1,39 +1,26 @@
 import { Request, Response } from 'express';
 import { ClienteService } from '../services/clienteService';
 import { ClienteFilters } from '../repositories/clienteRepository';
+import { logError, logWarn } from '../utils/logger';
 
 export class ClienteController {
   private clienteService = new ClienteService();
 
   async getClientes(req: Request, res: Response): Promise<void> {
-    console.log('=== CLIENTE CONTROLLER ===');
-    console.log('ClienteController.getClientes - req query:', req.query);
-    console.log('ClienteController.getClientes - req user:', req.user);
-    console.log('ClienteController.getClientes - req headers:', req.headers);
-
     const filters: ClienteFilters = req.query ? req.query as any : {};
-    const userId = req.query['userId'];
-    console.log('ClienteController.getClientes - userId from query:', userId);
+    const userId = req.query['userId'] || req.user?.id;
 
-    // Se não há userId no query, tentar pegar do token decodificado
-    const userIdFromToken = req.user?.id;
-    console.log('ClienteController.getClientes - userId from token:', userIdFromToken);
-
-    const finalUserId = userId || userIdFromToken;
-    console.log('ClienteController.getClientes - final userId:', finalUserId);
-
-    if (!finalUserId) {
-      console.error('No userId provided');
+    if (!userId) {
+      logWarn('Get clients failed: missing user ID', { path: req.path });
       res.status(400).json({ message: 'User ID is required' });
       return;
     }
 
     try {
-      const clientes = await this.clienteService.getClientes(Number(finalUserId), filters);
-      console.log('ClienteController.getClientes - result:', clientes);
+      const clientes = await this.clienteService.getClientes(Number(userId), filters);
       res.json(clientes);
     } catch (error) {
-      console.error('Erro em getClientes:', error);
+      logError('Failed to get clients', error, { userId });
       res.status(500).json({ message: 'Erro ao buscar clientes' });
     }
   }
@@ -48,7 +35,7 @@ export class ClienteController {
       }
       res.json(cliente);
     } catch (error) {
-      console.error('Erro em getClienteById:', error);
+      logError('Failed to get client by ID', error, { clienteId: req.params.id });
       res.status(500).json({ message: 'Erro ao buscar cliente' });
     }
   }
@@ -58,7 +45,7 @@ export class ClienteController {
       const cliente = await this.clienteService.createCliente(req.body);
       res.status(201).json(cliente);
     } catch (error) {
-      console.error('Erro em createCliente:', error);
+      logError('Failed to create client', error);
       res.status(500).json({ message: 'Erro ao criar cliente' });
     }
   }
@@ -69,7 +56,7 @@ export class ClienteController {
       const cliente = await this.clienteService.updateCliente(Number(id), req.body);
       res.json(cliente);
     } catch (error) {
-      console.error('Erro em updateCliente:', error);
+      logError('Failed to update client', error, { clienteId: id });
       res.status(500).json({ message: 'Erro ao atualizar cliente' });
     }
   }
@@ -80,7 +67,7 @@ export class ClienteController {
       await this.clienteService.deleteCliente(Number(id));
       res.status(204).send();
     } catch (error) {
-      console.error('Erro em deleteCliente:', error);
+      logError('Failed to delete client', error, { clienteId: id });
       res.status(500).json({ message: 'Erro ao deletar cliente' });
     }
   }

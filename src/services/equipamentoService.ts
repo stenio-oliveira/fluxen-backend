@@ -9,24 +9,14 @@ export class EquipamentoService {
   private usuarioRepository = new UsuarioRepository();
 
   async getEquipamentos(userId: number, filters: EquipmentFilters): Promise<Equipamento[] | void[]> {
-    console.log('EquipamentoService.getEquipamentos - userId:', userId);
-    console.log('EquipamentoService.getEquipamentos - filters:', filters);
-    
-    const profileList = await this.usuarioRepository.findProfileList(userId);
-    console.log('EquipamentoService.getEquipamentos - profiles:', profileList);
-    
     const isAdmin = await this.usuarioRepository.isAdmin(userId);
     const isResponsable = await this.usuarioRepository.isResponsable(userId);
 
     if(isAdmin) {
-      const result = await this.equipamentoRepository.findAll(filters);
-      console.log('EquipamentoService.getEquipamentos - findAll result:', result);
-      return result;
+      return await this.equipamentoRepository.findAll(filters);
     }
     if(isResponsable) {
-      const result = await this.equipamentoRepository.findByResponsableUser(userId, filters);
-      console.log('EquipamentoService.getEquipamentos - findByResponsableUser result:', result);
-      return result;
+      return await this.equipamentoRepository.findByResponsableUser(userId, filters);
     }
     return [];
   }
@@ -49,8 +39,6 @@ export class EquipamentoService {
 
   async generateApiKey(equipamentoId: number): Promise<string> {
     const apiKey = `eq_${equipamentoId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log('apiKey: ', apiKey)
-    console.log('equipamentoId: ', equipamentoId)
     await this.equipamentoRepository.update(equipamentoId, { api_key: apiKey });
     return apiKey;
   }

@@ -1,32 +1,28 @@
 import { Request, Response } from 'express';
 import { EquipamentoService } from '../services/equipamentoService';
+import { logError } from '../utils/logger';
 
+export interface EquipmentFilters {
+  columnFilters?: {
+    id: string;
+    nome: string;
+    cliente_nome: string;
+  };
+  generalFilter: string;
+}
 
- export interface EquipmentFilters {
-   columnFilters?: {
-     id: string;
-     nome: string;
-     cliente_nome: string;
-   };
-   generalFilter: string;
- }
 export class EquipamentoController {
   private equipamentoService = new EquipamentoService();
 
   async getEquipamentos(req: Request, res: Response): Promise<void> {
-    const filters : EquipmentFilters = req.query ? req.query as any: {};
+    const filters: EquipmentFilters = req.query ? req.query as any : {};
     const userId = req.query.userId as string;
-    
-    console.log('EquipamentoController.getEquipamentos - userId header:', userId);
-    console.log('EquipamentoController.getEquipamentos - filters:', filters);
-    console.log('EquipamentoController.getEquipamentos - req.headers:', req.headers);
-    
+
     try {
       const equipamentos = await this.equipamentoService.getEquipamentos(Number(userId), filters);
-      console.log('EquipamentoController.getEquipamentos - result:', equipamentos);
       res.json(equipamentos);
     } catch (error) {
-      console.error('Erro em getEquipamentos:', error);
+      logError('Failed to get equipment', error, { userId });
       res.status(500).json({ message: 'Erro ao buscar equipamentos' });
     }
   }
@@ -41,7 +37,7 @@ export class EquipamentoController {
       }
       res.json(equipamento);
     } catch (error) {
-      console.error('Erro em getEquipamentoById:', error);
+      logError('Failed to get equipment by ID', error, { equipamentoId: req.params.id });
       res.status(500).json({ message: 'Erro ao buscar equipamento' });
     }
   }
@@ -51,7 +47,7 @@ export class EquipamentoController {
       const equipamento = await this.equipamentoService.createEquipamento(req.body);
       res.status(201).json(equipamento);
     } catch (error) {
-      console.error('Erro em createEquipamento:', error);
+      logError('Failed to create equipment', error);
       res.status(500).json({ message: 'Erro ao criar equipamento' });
     }
   }
@@ -62,7 +58,7 @@ export class EquipamentoController {
       const equipamento = await this.equipamentoService.updateEquipamento(Number(id), req.body);
       res.json(equipamento);
     } catch (error) {
-      console.error('Erro em updateEquipamento:', error);
+      logError('Failed to update equipment', error, { equipamentoId: id });
       res.status(500).json({ message: 'Erro ao atualizar equipamento' });
     }
   }
@@ -73,7 +69,7 @@ export class EquipamentoController {
       await this.equipamentoService.deleteEquipamento(Number(id));
       res.status(204).send();
     } catch (error) {
-      console.error('Erro em deleteEquipamento:', error);
+      logError('Failed to delete equipment', error, { equipamentoId: id });
       res.status(500).json({ message: 'Erro ao deletar equipamento' });
     }
   }
@@ -84,7 +80,7 @@ export class EquipamentoController {
       const apiKey = await this.equipamentoService.generateApiKey(Number(id));
       res.json({ api_key: apiKey });
     } catch (error) {
-      console.error('Erro em generateApiKey:', error);
+      logError('Failed to generate API key', error, { equipamentoId: id });
       res.status(500).json({ message: 'Erro ao gerar API key' });
     }
   }
@@ -95,7 +91,7 @@ export class EquipamentoController {
       const apiKey = await this.equipamentoService.regenerateApiKey(Number(id));
       res.json({ api_key: apiKey });
     } catch (error) {
-      console.error('Erro em regenerateApiKey:', error);
+      logError('Failed to regenerate API key', error, { equipamentoId: id });
       res.status(500).json({ message: 'Erro ao regenerar API key' });
     }
   }

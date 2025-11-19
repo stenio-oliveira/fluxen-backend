@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { MetricaService } from '../services/metricaService';
+import { logError } from '../utils/logger';
 
 
 export interface MetricasFilters{ 
@@ -20,7 +21,7 @@ export class MetricaController {
       const metricas = await this.metricaService.getMetricas(filters);
       res.json(metricas);
     } catch (error) {
-      console.error('Erro em getMetricas:', error);
+      logError('Failed to get metrics', error);
       res.status(500).json({ message: 'Erro ao buscar métricas' });
     }
   }
@@ -31,10 +32,9 @@ export class MetricaController {
       const metricas = await this.metricaService.getMetricaByEquipamentoId(
         Number(id_equipamento)
       );
-      console.log("metircas associadas ao equipamento", metricas);
       res.json(metricas);
     } catch (error) {
-      console.error('Erro em getMetricaByEquipamentoId:', error);
+      logError('Failed to get metrics by equipment ID', error, { equipamentoId: req.params.id_equipamento });
       res.status(500).json({ message: 'Erro ao buscar métricas de equipamento' });
     }
   }
@@ -51,7 +51,7 @@ export class MetricaController {
       );
       res.json(metrica);
     } catch (error) {
-      console.error('Erro em associateMetricToEquipamento:', error);
+      logError('Failed to associate metric to equipment', error, { id_equipamento, id_metrica });
       res.status(500).json({ message: 'Erro ao associar métrica ao equipamento' });
     }
   }
@@ -65,7 +65,7 @@ export class MetricaController {
       );
       res.json(associatedMetrics);
     } catch (error) {
-      console.error('Erro em desassociateMetricToEquipamento:', error);
+      logError('Failed to desassociate metric from equipment', error, { id_equipamento, id_metrica });
       res.status(500).json({ message: 'Erro ao desassociar métrica ao equipamento' });
     }
   }
@@ -80,7 +80,7 @@ export class MetricaController {
       }
       res.json(metrica);
     } catch (error) {
-      console.error('Erro em getMetricaById:', error);
+      logError('Failed to get metric by ID', error, { metricaId: req.params.id });
       res.status(500).json({ message: 'Erro ao buscar métrica' });
     }
   }
@@ -90,7 +90,7 @@ export class MetricaController {
       const metrica = await this.metricaService.createMetrica(req.body);
       res.status(201).json(metrica);
     } catch (error) {
-      console.error('Erro em createMetrica:', error);
+      logError('Failed to create metric', error);
       res.status(500).json({ message: 'Erro ao criar métrica' });
     }
   }
@@ -101,7 +101,7 @@ export class MetricaController {
       const metrica = await this.metricaService.updateMetrica(Number(id), req.body);
       res.json(metrica);
     } catch (error) {
-      console.error('Erro em updateMetrica:', error);
+      logError('Failed to update metric', error, { metricaId: id });
       res.status(500).json({ message: 'Erro ao atualizar métrica' });
     }
   }
@@ -112,7 +112,7 @@ export class MetricaController {
       await this.metricaService.deleteMetrica(Number(id));
       res.status(204).send();
     } catch (error) {
-      console.error('Erro em deleteMetrica:', error);
+      logError('Failed to delete metric', error, { metricaId: id });
       res.status(500).json({ message: 'Erro ao deletar métrica' });
     }
   }
@@ -122,7 +122,7 @@ export class MetricaController {
       const stats = await this.metricaService.getMetricasStats();
       res.json(stats);
     } catch (error) {
-      console.error('Erro em getMetricasStats:', error);
+      logError('Failed to get metrics statistics', error);
       res.status(500).json({ message: 'Erro ao buscar estatísticas das métricas' });
     }
   }

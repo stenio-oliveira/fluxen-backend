@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { UsuarioPerfilService } from '../services/usuarioPerfilService';
+import { logError } from '../utils/logger';
 
 export class UsuarioPerfilController {
   private usuarioPerfilService = new UsuarioPerfilService();
@@ -9,7 +10,7 @@ export class UsuarioPerfilController {
       const usuarioPerfis = await this.usuarioPerfilService.getUsuarioPerfis();
       res.json(usuarioPerfis);
     } catch (error) {
-      console.error('Erro em getUsuarioPerfis:', error);
+      logError('Failed to get user profiles', error);
       res.status(500).json({ message: 'Erro ao buscar perfis de usuários' });
     }
   }
@@ -24,7 +25,7 @@ export class UsuarioPerfilController {
       }
       res.json(usuarioPerfil);
     } catch (error) {
-      console.error('Erro em getUsuarioPerfilById:', error);
+      logError('Failed to get user profile by ID', error, { perfilId: req.params.id });
       res.status(500).json({ message: 'Erro ao buscar perfil de usuário' });
     }
   }
@@ -34,7 +35,7 @@ export class UsuarioPerfilController {
       const usuarioPerfil = await this.usuarioPerfilService.createUsuarioPerfil(req.body);
       res.status(201).json(usuarioPerfil);
     } catch (error) {
-      console.error('Erro em createUsuarioPerfil:', error);
+      logError('Failed to create user profile', error);
       res.status(500).json({ message: 'Erro ao criar perfil de usuário' });
     }
   }
@@ -45,7 +46,7 @@ export class UsuarioPerfilController {
       const usuarioPerfil = await this.usuarioPerfilService.updateUsuarioPerfil(Number(id), req.body);
       res.json(usuarioPerfil);
     } catch (error) {
-      console.error('Erro em updateUsuarioPerfil:', error);
+      logError('Failed to update user profile', error, { perfilId: id });
       res.status(500).json({ message: 'Erro ao atualizar perfil de usuário' });
     }
   }
@@ -56,7 +57,7 @@ export class UsuarioPerfilController {
       await this.usuarioPerfilService.deleteUsuarioPerfil(Number(id));
       res.status(204).send();
     } catch (error) {
-      console.error('Erro em deleteUsuarioPerfil:', error);
+      logError('Failed to delete user profile', error, { perfilId: id });
       res.status(500).json({ message: 'Erro ao deletar perfil de usuário' });
     }
   }

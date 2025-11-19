@@ -110,7 +110,6 @@ export class MetricaRepository {
         }
       })
       .then((metricas) => { 
-        console.log("metricas antes de serem formatadas: ", metricas);
         return metricas.map((metrica) => ({
           ...metrica,
           equipamento_metrica: metrica.equipamento_metricas[0],
@@ -156,10 +155,6 @@ export class MetricaRepository {
         where: { id_metrica, id_equipamento },
         select: { id: true },
       });
-      console.log(
-        "desassociateMetricToEquipamento - equipamentoMetrica a ser deleteado",
-        equipamentoMetrica
-      );
       if (equipamentoMetrica) {
         await tx.equipamento_metricas.delete({
           where: { id: equipamentoMetrica.id },

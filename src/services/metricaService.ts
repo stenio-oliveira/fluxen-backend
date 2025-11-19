@@ -7,9 +7,7 @@ export class MetricaService {
 
   async getMetricas(filters: MetricasFilters): Promise<Metrica[]> {
 
-    const metricas = await this.metricaRepository.findAll(filters);
-    console.log('Metricas encontradas:', metricas);
-    return metricas;
+    return await this.metricaRepository.findAll(filters);
   }
 
   async getMetricaById(id: number): Promise<Metrica | null> {

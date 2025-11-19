@@ -6,11 +6,7 @@ export class UsuarioService {
   private usuarioRepository = new UsuarioRepository();
 
   async getUsuarios(userId: number, filters: UserFilters): Promise<Usuario[]> {
-    console.log('UsuarioService.getUsuarios - userId:', userId);
-    console.log('UsuarioService.getUsuarios - filters:', filters);
-    const result = await this.usuarioRepository.findAll(filters);
-    console.log('UsuarioService.getUsuarios - result:', result);
-    return result;
+    return await this.usuarioRepository.findAll(filters);
   }
 
  

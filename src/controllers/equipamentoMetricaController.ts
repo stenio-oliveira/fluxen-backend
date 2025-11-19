@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { EquipamentoMetricaService } from '../services/equipamentoMetricaService';
+import { logError } from '../utils/logger';
 
 export class EquipamentoMetricaController {
   private equipamentoMetricaService = new EquipamentoMetricaService();
@@ -9,7 +10,7 @@ export class EquipamentoMetricaController {
       const metricas = await this.equipamentoMetricaService.getEquipamentoMetricas();
       res.json(metricas);
     } catch (error) {
-      console.error('Erro em getEquipamentoMetricas:', error);
+      logError('Failed to get equipment metrics', error);
       res.status(500).json({ message: 'Erro ao buscar métricas de equipamentos' });
     }
   }
@@ -24,7 +25,7 @@ export class EquipamentoMetricaController {
       }
       res.json(metrica);
     } catch (error) {
-      console.error('Erro em getEquipamentoMetricaById:', error);
+      logError('Failed to get equipment metric by ID', error, { metricaId: req.params.id });
       res.status(500).json({ message: 'Erro ao buscar métrica de equipamento' });
     }
   }
@@ -34,7 +35,7 @@ export class EquipamentoMetricaController {
       const metrica = await this.equipamentoMetricaService.createEquipamentoMetrica(req.body);
       res.status(201).json(metrica);
     } catch (error) {
-      console.error('Erro em createEquipamentoMetrica:', error);
+      logError('Failed to create equipment metric', error);
       res.status(500).json({ message: 'Erro ao criar métrica de equipamento' });
     }
   }
@@ -45,7 +46,7 @@ export class EquipamentoMetricaController {
       const metrica = await this.equipamentoMetricaService.updateEquipamentoMetrica(Number(id), req.body);
       res.json(metrica);
     } catch (error) {
-      console.error('Erro em updateEquipamentoMetrica:', error);
+      logError('Failed to update equipment metric', error, { metricaId: id });
       res.status(500).json({ message: 'Erro ao atualizar métrica de equipamento' });
     }
   }
@@ -56,7 +57,7 @@ export class EquipamentoMetricaController {
       await this.equipamentoMetricaService.deleteEquipamentoMetrica(Number(id));
       res.status(204).send();
     } catch (error) {
-      console.error('Erro em deleteEquipamentoMetrica:', error);
+      logError('Failed to delete equipment metric', error, { metricaId: id });
       res.status(500).json({ message: 'Erro ao deletar métrica de equipamento' });
     }
   }

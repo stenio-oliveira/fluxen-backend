@@ -62,8 +62,7 @@ export class EquipamentoLogRepository {
       timestamp: item.timestamp || new Date(),
     }));
 
-    if(transaction){ 
-      console.log("payload: ", processedData)
+    if (transaction) { 
      const batchPayload =  await transaction.equipamento_log.createMany({ data: processedData });
      if (batchPayload.count !== processedData.length) return false;
      return true;

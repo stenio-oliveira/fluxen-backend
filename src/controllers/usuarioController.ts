@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { UsuarioService } from '../services/usuarioService';
+import { logError } from '../utils/logger';
 
 
 export interface ClientesFilters {
@@ -31,7 +32,7 @@ export class UsuarioController {
       const usuarios = await this.usuarioService.getUsuarios(Number(userId), filters);
       res.json(usuarios);
     } catch (error) {
-      console.error("Erro em getUsuarios:", error);
+      logError('Failed to get users', error);
       res.status(500).json({ message: "Erro ao buscar usuários" });
     }
   }
@@ -44,7 +45,7 @@ export class UsuarioController {
       );
       res.json(cliente);
     } catch (error) {
-      console.error("Erro em getClienteByEquipamentoId:", error);
+      logError('Failed to get client by equipment ID', error, { equipamentoId: req.params.id_equipamento });
       res.status(500).json({ message: "Erro ao buscar cliente" });
     }
   }
@@ -59,7 +60,7 @@ export class UsuarioController {
       }
       res.json(usuario);
     } catch (error) {
-      console.error("Erro em getUsuarioById:", error);
+      logError('Failed to get user by ID', error, { usuarioId: req.params.id });
       res.status(500).json({ message: "Erro ao buscar usuário" });
     }
   }
@@ -69,7 +70,7 @@ export class UsuarioController {
       const usuario = await this.usuarioService.createUsuario(req.body);
       res.status(201).json(usuario);
     } catch (error) {
-      console.error("Erro em createUsuario:", error);
+      logError('Failed to create user', error);
       res.status(500).json({ message: "Erro ao criar usuário" });
     }
   }
@@ -83,7 +84,7 @@ export class UsuarioController {
       );
       res.json(usuario);
     } catch (error) {
-      console.error("Erro em updateUsuario:", error);
+      logError('Failed to update user', error, { usuarioId: id });
       res.status(500).json({ message: "Erro ao atualizar usuário" });
     }
   }
@@ -94,7 +95,7 @@ export class UsuarioController {
       await this.usuarioService.deleteUsuario(Number(id));
       res.status(204).send();
     } catch (error) {
-      console.error("Erro em deleteUsuario:", error);
+      logError('Failed to delete user', error, { usuarioId: id });
       res.status(500).json({ message: "Erro ao deletar usuário" });
     }
   }

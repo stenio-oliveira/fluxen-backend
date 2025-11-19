@@ -3,18 +3,18 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../index';
 import { UsuarioRepository } from '../repositories/usuarioRepository';
+import { logError, logWarn, logInfo } from '../utils/logger';
 
 const secret = process.env.JWT_SECRET || 'default_secret';
 
 export class AuthController {
   async register(req: Request, res: Response) {
     const { username, senha, nome, email } = req.body;
-    console.log('body: ', req.body)
+
     if (!username || !senha || !nome || !email) {
       return res.status(400).json({ message: 'Todos os campos (username, senha, nome, email) são obrigatórios.' });
     }
 
-    // Simple email validation (regex for more sophistication if needed)
     if (typeof email !== 'string' || !email.includes('@')) {
       return res.status(400).json({ message: 'Email inválido.' });
     }
@@ -23,7 +23,6 @@ export class AuthController {
       return res.status(400).json({ message: 'A senha deve ter pelo menos 6 caracteres.' });
     }
 
-    // Optionally, check username/email duplication
     const existingUser = await prisma.usuario.findFirst({
       where: {
         OR: [
@@ -34,6 +33,7 @@ export class AuthController {
     });
 
     if (existingUser) {
+      logWarn('User registration failed: username or email already exists', { email, username });
       return res.status(409).json({ message: 'Usuário ou email já cadastrado.' });
     }
 
@@ -43,38 +43,41 @@ export class AuthController {
         data: { username, senha: hashedPassword, nome, email },
       });
 
+      logInfo('User registered successfully', { userId: user.id, email });
       res.status(201).json(user);
     } catch (error) {
+      logError('Failed to register user', error, { email, username });
       res.status(500).json({ message: 'Error registering user', error });
     }
   }
 
   async login(req: Request, res: Response) {
     const { email, password } = req.body;
-    console.log('body: ', req.body)
     const userRepository = new UsuarioRepository();
+
     try {
       const user = await userRepository.findByEmail(email);
 
       if (!user) {
+        logWarn('Login failed: user not found', { email });
         return res.status(401).json({ message: 'Invalid credentials' });
       }
-       console.log('password: ', password)
      
       const correctPass = await bcrypt.compare(password, user.senha);
-      console.log('correctPass', correctPass);
+
       if (correctPass) {
         const token = jwt.sign({ id: user.id, email: user.email }, secret, {
           expiresIn: "2d",
         });
-        console.log('token: ', token)
-        console.log('user: ', user)
+        logInfo('User logged in successfully', { userId: user.id, email });
         return res.json({ token, user });
       }
+
+      logWarn('Login failed: invalid password', { email });
       return res.status(401).json({message: 'Senha ou email incorreto'});
      
-    } catch (error : any) {
-      console.log('error: ', error)
+    } catch (error: any) {
+      logError('Failed to login', error, { email });
       res.status(500).json({ message: 'Error logging in', error : error.message });
     }
   }

@@ -189,7 +189,6 @@ export class EquipamentoRepository {
   buildGeneralFilter = (
     generalFilter: string
   ): Prisma.equipamentoWhereInput => {
-    console.log("generalFilter", generalFilter);
     if (!generalFilter || generalFilter === "") return {};
     return {
       OR: [
