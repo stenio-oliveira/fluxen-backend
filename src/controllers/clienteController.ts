@@ -56,7 +56,7 @@ export class ClienteController {
       const cliente = await this.clienteService.updateCliente(Number(id), req.body);
       res.json(cliente);
     } catch (error) {
-      logError('Failed to update client', error, { clienteId: id });
+      logError('Failed to update client', error, { clienteId: req.params.id });
       res.status(500).json({ message: 'Erro ao atualizar cliente' });
     }
   }
@@ -67,7 +67,7 @@ export class ClienteController {
       await this.clienteService.deleteCliente(Number(id));
       res.status(204).send();
     } catch (error) {
-      logError('Failed to delete client', error, { clienteId: id });
+      logError('Failed to delete client', error, { clienteId: req.params.id });
       res.status(500).json({ message: 'Erro ao deletar cliente' });
     }
   }

@@ -51,7 +51,7 @@ export class MetricaController {
       );
       res.json(metrica);
     } catch (error) {
-      logError('Failed to associate metric to equipment', error, { id_equipamento, id_metrica });
+      logError('Failed to associate metric to equipment', error);
       res.status(500).json({ message: 'Erro ao associar métrica ao equipamento' });
     }
   }
@@ -65,7 +65,7 @@ export class MetricaController {
       );
       res.json(associatedMetrics);
     } catch (error) {
-      logError('Failed to desassociate metric from equipment', error, { id_equipamento, id_metrica });
+      logError('Failed to desassociate metric from equipment', error);
       res.status(500).json({ message: 'Erro ao desassociar métrica ao equipamento' });
     }
   }
@@ -101,7 +101,7 @@ export class MetricaController {
       const metrica = await this.metricaService.updateMetrica(Number(id), req.body);
       res.json(metrica);
     } catch (error) {
-      logError('Failed to update metric', error, { metricaId: id });
+      logError('Failed to update metric', error);
       res.status(500).json({ message: 'Erro ao atualizar métrica' });
     }
   }
@@ -112,7 +112,7 @@ export class MetricaController {
       await this.metricaService.deleteMetrica(Number(id));
       res.status(204).send();
     } catch (error) {
-      logError('Failed to delete metric', error, { metricaId: id });
+      logError('Failed to delete metric', error);
       res.status(500).json({ message: 'Erro ao deletar métrica' });
     }
   }

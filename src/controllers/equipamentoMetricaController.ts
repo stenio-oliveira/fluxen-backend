@@ -46,7 +46,7 @@ export class EquipamentoMetricaController {
       const metrica = await this.equipamentoMetricaService.updateEquipamentoMetrica(Number(id), req.body);
       res.json(metrica);
     } catch (error) {
-      logError('Failed to update equipment metric', error, { metricaId: id });
+      logError('Failed to update equipment metric', error, { metricaId: req.params.id });
       res.status(500).json({ message: 'Erro ao atualizar métrica de equipamento' });
     }
   }
@@ -57,7 +57,7 @@ export class EquipamentoMetricaController {
       await this.equipamentoMetricaService.deleteEquipamentoMetrica(Number(id));
       res.status(204).send();
     } catch (error) {
-      logError('Failed to delete equipment metric', error, { metricaId: id });
+      logError('Failed to delete equipment metric', error, { metricaId: req.params.id });
       res.status(500).json({ message: 'Erro ao deletar métrica de equipamento' });
     }
   }

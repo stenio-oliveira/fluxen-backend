@@ -84,7 +84,7 @@ export class UsuarioController {
       );
       res.json(usuario);
     } catch (error) {
-      logError('Failed to update user', error, { usuarioId: id });
+      logError('Failed to update user', error, { usuarioId: req.params.id });
       res.status(500).json({ message: "Erro ao atualizar usuário" });
     }
   }
@@ -95,7 +95,7 @@ export class UsuarioController {
       await this.usuarioService.deleteUsuario(Number(id));
       res.status(204).send();
     } catch (error) {
-      logError('Failed to delete user', error, { usuarioId: id });
+      logError('Failed to delete user', error, { usuarioId: req.params.id });
       res.status(500).json({ message: "Erro ao deletar usuário" });
     }
   }
