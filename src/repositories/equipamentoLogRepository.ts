@@ -15,6 +15,17 @@ export class EquipamentoLogRepository {
     });
   }
 
+  async updateGroup(id: number, data: Partial<EquipamentoLogGrupo>, transaction?: Prisma.TransactionClient): Promise<EquipamentoLogGrupo> {
+    // Remove 'id' from data if somehow present
+    const { id : id_grupo, id_equipamento, timestamp, ...rest} = data as any;
+    if (transaction) {
+      return transaction.equipamento_log_grupo.update({ where: { id }, data: rest });
+    }
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      return tx.equipamento_log_grupo.update({ where: { id }, data: rest });
+    });
+  }
+
   async findById(id: number, transaction? : Prisma.TransactionClient): Promise<EquipamentoLog | null> {
 
     if(transaction){ 

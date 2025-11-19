@@ -12,7 +12,7 @@ model equipamento {
   nome                  String
   api_key               String?                 @db.Text
   id_cliente            Int?
-  cliente               cliente?                @relation(fields: [id_cliente], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "cliente")
+  cliente               cliente?                @relation(fields: [id_cliente], references: [id], onDelete: Cascade, map: "cliente")
   equipamento_log       equipamento_log[]
   equipamento_log_grupo equipamento_log_grupo[]
   equipamento_metricas  equipamento_metricas[]
@@ -29,6 +29,7 @@ model equipamento_log {
   valor_convertido       Decimal                @default(0) @db.Decimal(10, 0)
   timestamp              DateTime               @db.DateTime(0)
   id_grupo               Int?
+  logs                   Json?
   equipamento            equipamento            @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento")
   equipamento_metricas   equipamento_metricas   @relation(fields: [id_equipamento_metrica], references: [id], onDelete: Cascade)
   equipamento_log_grupo  equipamento_log_grupo? @relation(fields: [id_grupo], references: [id], onDelete: Cascade, map: "grupo")
@@ -44,6 +45,7 @@ model equipamento_log_grupo {
   id              Int               @id @default(autoincrement())
   timestamp       DateTime?         @db.DateTime(0)
   id_equipamento  Int?
+  logs            Json?
   equipamento_log equipamento_log[]
   equipamento     equipamento?      @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento_relacionado")
 
@@ -80,13 +82,14 @@ model perfil {
 }
 
 model usuario {
-  id             Int              @id @default(autoincrement())
-  nome           String
-  email          String           @unique
-  senha          String
-  username       String           @unique
-  cliente        cliente[]
-  usuario_perfil usuario_perfil[]
+  id                                        Int              @id @default(autoincrement())
+  nome                                      String
+  email                                     String           @unique
+  senha                                     String
+  username                                  String           @unique
+  cliente_cliente_id_administradorTousuario cliente[]        @relation("cliente_id_administradorTousuario")
+  cliente                                   cliente[]
+  usuario_perfil                            usuario_perfil[]
 }
 
 model usuario_perfil {
@@ -101,12 +104,15 @@ model usuario_perfil {
 }
 
 model cliente {
-  id             Int           @id @default(autoincrement())
-  nome           String?       @db.VarChar(255)
-  cnpj           String?       @db.VarChar(20)
-  id_responsavel Int?
-  usuario        usuario?      @relation(fields: [id_responsavel], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "repsponsavel")
-  equipamento    equipamento[]
+  id                                        Int           @id @default(autoincrement())
+  nome                                      String?       @db.VarChar(255)
+  cnpj                                      String?       @db.VarChar(20)
+  id_responsavel                            Int?
+  id_administrador                          Int?
+  usuario_cliente_id_administradorTousuario usuario?      @relation("cliente_id_administradorTousuario", fields: [id_administrador], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "administrador")
+  usuario                                   usuario?      @relation(fields: [id_responsavel], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "repsponsavel")
+  equipamento                               equipamento[]
 
   @@index([id_responsavel], map: "repsponsavel_idx")
+  @@index([id_administrador], map: "administrador_idx")
 }

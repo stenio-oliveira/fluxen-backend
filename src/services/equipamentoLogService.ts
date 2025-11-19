@@ -31,9 +31,9 @@ export class EquipamentoLogService {
         );
       const metricaToEquipamentoMetrica = new Map<number, EquipamentoMetrica>();
       const newGroup = await this.equipamentoLogRepository.createGroup(equipamentoId ,tx);
+
       data.logs.forEach(log => {
         log.id_grupo = newGroup.id;
-
       });
       //mapeando equipamentoMetrica (que contém informações para conversão) para cada métrica em cada log
       for (const equipamentoMetrica of equipamentoMetricas) {
@@ -73,6 +73,11 @@ export class EquipamentoLogService {
         data.logs,
         tx
       );
+      newGroup.logs = JSON.stringify(data.logs);
+      console.log({newGroup});
+     const updatedGroup = await this.equipamentoLogRepository.updateGroup(newGroup.id, newGroup, tx);
+     console.log({updatedGroup});
+
       if (!logsCreated) {
         throw new Error('Failed to create logs');
       }
