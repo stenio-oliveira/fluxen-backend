@@ -1,12 +1,50 @@
-import { EquipamentoLogRepository } from "../repositories/equipamentoLogRepository";
+import { EquipamentoLogRepository, PaginationOptions } from "../repositories/equipamentoLogRepository";
 import { EquipamentoMetricaRepository } from "../repositories/equipamentoMetricaRepository";
 import { EquipamentoMetrica } from "../types/EquipamentoMetrica";
-import { prisma } from "..";
-import { Prisma } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { CreateEquipamentoLogsDTO } from "../dto/HttpRequestDTOS/CreateEquipamentoLogsDTO";
+import { rabbitMQService } from "./rabbitmqService";
+import { logError, logInfo } from "../utils/logger";
+
+const prisma = new PrismaClient();
+
 export class EquipamentoLogService {
-  private equipamentoLogRepository = new EquipamentoLogRepository();
-  private equipamentoMetricaRepository = new EquipamentoMetricaRepository();
+  private equipamentoLogRepository: EquipamentoLogRepository;
+  private equipamentoMetricaRepository: EquipamentoMetricaRepository;
+
+  constructor() {
+    this.equipamentoLogRepository = new EquipamentoLogRepository();
+    this.equipamentoMetricaRepository = new EquipamentoMetricaRepository();
+  }
+
+  async sendLogsToRabbitMQ(data: CreateEquipamentoLogsDTO): Promise<boolean> {
+    try {
+      // Verificar se RabbitMQ está conectado
+      if (!rabbitMQService.isConnected()) {
+        logError('RabbitMQ not connected, attempting to connect...', new Error('RabbitMQ not connected'));
+        await rabbitMQService.connect();
+      }
+
+      // Publicar logs na fila
+      const published = await rabbitMQService.publishLogs(data);
+
+      if (published) {
+        logInfo('Logs sent to RabbitMQ successfully', {
+          equipamentoId: data.logs?.[0]?.id_equipamento,
+          logsCount: data.logs?.length || 0
+        });
+        return true;
+      } else {
+        logError('Failed to publish logs to RabbitMQ - queue buffer full', new Error('Queue buffer full'));
+        return false;
+      }
+    } catch (error) {
+      logError('Failed to send logs to RabbitMQ', error, {
+        equipamentoId: data.logs?.[0]?.id_equipamento
+      });
+      throw error;
+    }
+  }
 
   async createManyEquipamentoLogs(
     data: CreateEquipamentoLogsDTO
@@ -36,17 +74,21 @@ export class EquipamentoLogService {
         );
         if (equipamentoMetrica) {
           const range_original_min = 0;
-          const range_original_max = 4096;
+          const range_original_max = 4095;
           const { valor } = log;
           const { valor_minimo, valor_maximo } = equipamentoMetrica;
-
           // Verificar se valor_convertido já foi fornecido
           if (log.valor_convertido === undefined || log.valor_convertido === null) {
           // Se valor_convertido não foi fornecido, calcular usando regra de 3
-            log.valor_convertido =
+            const calculatedValue =
               ((Number(valor) - range_original_min) * (valor_maximo - valor_minimo)) /
               (range_original_max - range_original_min) +
               valor_minimo;
+            // Arredondar para 2 casas decimais
+            log.valor_convertido = Math.round(calculatedValue * 100) / 100;
+          } else {
+            // Se já foi fornecido, garantir que está arredondado para 2 casas decimais
+            log.valor_convertido = Math.round(Number(log.valor_convertido) * 100) / 100;
           }
 
           log.id_equipamento_metrica = equipamentoMetrica.id;
@@ -105,9 +147,55 @@ export class EquipamentoLogService {
     return 'none';
   }
 
-  async getLogsTableData(id_equipamento: number): Promise<any> {
+  private buildRowsFromGroups(groups: any[], metrics: any[]): any[] {
+    return groups.map((group: any) => {
+      const row: any = {
+        id: group.id,
+        timestamp: group.timestamp
+      };
+
+      let parsedLogs: any[] = [];
+      if (group.logs) {
+        try {
+          parsedLogs = typeof group.logs === 'string'
+            ? JSON.parse(group.logs)
+            : group.logs;
+        } catch (error) {
+          console.error('Error parsing logs JSON:', error);
+          parsedLogs = [];
+        }
+      }
+
+      parsedLogs.forEach((log: any) => {
+        const valorConvertido = log.valor_convertido !== null && log.valor_convertido !== undefined
+          ? Math.round(Number(log.valor_convertido) * 100) / 100
+          : null;
+
+        row[`metrica_${log.id_metrica}`] = valorConvertido;
+
+        if (valorConvertido !== null) {
+          const alert = this.checkValueLimits(valorConvertido, log.id_metrica, metrics);
+          row[`metrica_${log.id_metrica}_alert`] = alert;
+        }
+      });
+
+      return row;
+    });
+  }
+
+  async getLogsTableData(
+    id_equipamento: number,
+    paginationOptions: PaginationOptions = {}
+  ): Promise<any> {
+    const page = Math.max(paginationOptions.page ?? 1, 1);
+    const pageSize = Math.max(Math.min(paginationOptions.pageSize ?? 50, 500), 1);
+
     const metrics = await this.equipamentoMetricaRepository.findByEquipamentoId(id_equipamento);
-    const groupedLogs = await this.equipamentoLogRepository.findGroupedByTimestamp(id_equipamento);
+    const { groups, total } = await this.equipamentoLogRepository.findGroupedByTimestamp(
+      id_equipamento,
+      { page, pageSize }
+    );
+
     // Create timestamp column
     const columnsArray = [
       {
@@ -130,51 +218,28 @@ export class EquipamentoLogService {
         });
       }
     });
-    // Parse logs from JSON column and build rows
-    const rows = groupedLogs.map((group: any) => {
-      const row: any = {
-        id: group.id,
-        timestamp: group.timestamp
-      };
+    const rows = this.buildRowsFromGroups(groups, metrics);
 
-      // Parse the logs JSON column
-      let parsedLogs: any[] = [];
-      if (group.logs) {
-        try {
-          // If logs is already an object (Prisma JSON type), use it directly
-          // Otherwise, parse it as a string
-          parsedLogs = typeof group.logs === 'string'
-            ? JSON.parse(group.logs)
-            : group.logs;
-        } catch (error) {
-          console.error('Error parsing logs JSON:', error);
-          parsedLogs = [];
-        }
-      }
-      // Build row with metric values and alerts
-      parsedLogs.forEach((log: any) => {
-        const valorConvertido = log.valor_convertido !== null && log.valor_convertido !== undefined
-          ? Number(log.valor_convertido)
-          : null;
+    let situationRows = rows;
+    if (page !== 1) {
+      const { groups: recentGroups } = await this.equipamentoLogRepository.findGroupedByTimestamp(
+        id_equipamento,
+        { page: 1, pageSize: 5 }
+      );
+      situationRows = this.buildRowsFromGroups(recentGroups, metrics);
+    }
 
-        row[`metrica_${log.id_metrica}`] = valorConvertido;
-
-        // Check value limits for alerts
-        if (valorConvertido !== null) {
-          const alert = this.checkValueLimits(valorConvertido, log.id_metrica, metrics);
-          row[`metrica_${log.id_metrica}_alert`] = alert;
-        }
-      });
-
-      return row;
-    });
-
-    
     return { 
       columns: columnsArray,
       rows,
-      situation: this.getSituation(rows),
-      metrics 
+      situation: this.getSituation(situationRows),
+      metrics,
+      pagination: {
+        page,
+        pageSize,
+        totalItems: total,
+        totalPages: total > 0 ? Math.ceil(total / pageSize) : 0
+      }
     };
   }
 }

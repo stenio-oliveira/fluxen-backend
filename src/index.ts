@@ -11,7 +11,8 @@ import usuarioPerfilRouter from './routers/usarioPerfilRouter';
 import usuarioRouter from './routers/usuarioRouter';
 import cors from "cors";
 import morgan from "morgan";
-import { logger, logError, logInfo } from './utils/logger';
+import { logger, logError, logInfo, logWarn } from './utils/logger';
+import { rabbitMQService } from './services/rabbitmqService';
 
 const app = express();
 
@@ -58,3 +59,11 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   logInfo(`Server started on port ${PORT}`);
 });
+
+rabbitMQService.connect()
+  .then(() => {
+    logInfo('RabbitMQ connection established');
+  })
+  .catch((error) => {
+    logWarn('RabbitMQ connection failed - will use direct processing', error);
+  });

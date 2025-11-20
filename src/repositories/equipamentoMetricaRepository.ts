@@ -1,6 +1,8 @@
-import { Prisma } from '@prisma/client';
-import { prisma } from '../index';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { EquipamentoMetrica } from '../types/EquipamentoMetrica';
+
+// Criar instância própria do Prisma para evitar dependência circular
+const prisma = new PrismaClient();
 import { CreateEquipamentoMetricaDTO } from '../dto/ServiceDTOS/CreateEquipamentoMetricaDTO';
 import { UpdateEquipamentoMetricaDTO } from '../dto/ServiceDTOS/UpdateEquipamentoMetricaDTO';
 

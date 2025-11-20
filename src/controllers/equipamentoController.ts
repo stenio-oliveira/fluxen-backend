@@ -53,8 +53,8 @@ export class EquipamentoController {
   }
 
   async updateEquipamento(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       const equipamento = await this.equipamentoService.updateEquipamento(Number(id), req.body);
       res.json(equipamento);
     } catch (error) {
@@ -64,8 +64,8 @@ export class EquipamentoController {
   }
 
   async deleteEquipamento(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       await this.equipamentoService.deleteEquipamento(Number(id));
       res.status(204).send();
     } catch (error) {
@@ -75,8 +75,8 @@ export class EquipamentoController {
   }
 
   async generateApiKey(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       const apiKey = await this.equipamentoService.generateApiKey(Number(id));
       res.json({ api_key: apiKey });
     } catch (error) {
@@ -86,8 +86,8 @@ export class EquipamentoController {
   }
 
   async regenerateApiKey(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       const apiKey = await this.equipamentoService.regenerateApiKey(Number(id));
       res.json({ api_key: apiKey });
     } catch (error) {

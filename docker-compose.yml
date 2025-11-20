@@ -1,33 +1,19 @@
 version: '3.8'
 
 services:
-  app:
-    build: .
-    container_name: equipamentos_sirgs_app
-    restart: unless-stopped
-    env_file: .env
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./:/usr/src/app
-      - /usr/src/app/node_modules
-    depends_on:
-      - db
-    command: sh -c "npx prisma generate && npm run dev"
-
-  db:
-    image: mysql:8.0
-    container_name: equipamentos_sirgs_db
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: equipamentos_sirgs_rabbitmq
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: sirgs_equipamentos
-      MYSQL_USER: sirgs
-      MYSQL_PASSWORD: sirgspassword
-    volumes:
-      - db_data:/var/lib/mysql
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
     ports:
-      - "3306:3306"
+      - "5672:5672"      # Porta AMQP
+      - "15672:15672"    # Porta Management UI
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
 
 volumes:
   db_data:
+  rabbitmq_data:

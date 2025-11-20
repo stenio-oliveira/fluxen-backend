@@ -41,8 +41,8 @@ export class UsuarioPerfilController {
   }
 
   async updateUsuarioPerfil(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       const usuarioPerfil = await this.usuarioPerfilService.updateUsuarioPerfil(Number(id), req.body);
       res.json(usuarioPerfil);
     } catch (error) {
@@ -52,8 +52,8 @@ export class UsuarioPerfilController {
   }
 
   async deleteUsuarioPerfil(req: Request, res: Response): Promise<void> {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       await this.usuarioPerfilService.deleteUsuarioPerfil(Number(id));
       res.status(204).send();
     } catch (error) {

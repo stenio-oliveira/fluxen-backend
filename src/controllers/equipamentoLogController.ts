@@ -11,6 +11,7 @@ export class EquipamentoLogController {
       const data = req.body as CreateEquipamentoLogsDTO;
       const equipamentoId = req.equipamento?.id;
 
+      // Validação de métricas duplicadas
       if (data && data.logs && Array.isArray(data.logs)) {
         const seenMetricas = new Set<number>();
         for (const log of data.logs) {
@@ -26,13 +27,45 @@ export class EquipamentoLogController {
         }
       }
 
-      const group = await this.equipamentoLogService.createManyEquipamentoLogs(req.body);
-      logInfo('Equipment logs received successfully', {
+      // Tentar processamento assíncrono via RabbitMQ primeiro
+      try {
+        const sentToQueue = await this.equipamentoLogService.sendLogsToRabbitMQ(data);
+        
+        if (sentToQueue) {
+          // Logs enviados para fila com sucesso - processamento assíncrono
+          logInfo('Equipment logs queued for async processing', {
+            equipamentoId,
+            logsCount: data.logs?.length || 0
+          });
+          res.status(202).json({ 
+            message: 'Logs recebidos e em processamento',
+            accepted: true,
+            processingMode: 'async'
+          });
+          return;
+        }
+      } catch (queueError) {
+        // Erro ao enviar para fila - fazer fallback para processamento síncrono
+        logWarn('Failed to send logs to RabbitMQ, falling back to sync processing', {
+          equipamentoId,
+          error: queueError
+        });
+      }
+
+      // Fallback: processamento síncrono (fila cheia ou RabbitMQ indisponível)
+      logInfo('Processing logs synchronously (RabbitMQ unavailable or queue full)', {
+        equipamentoId
+      });
+      const group = await this.equipamentoLogService.createManyEquipamentoLogs(data);
+      logInfo('Equipment logs processed successfully (sync)', {
         equipamentoId,
         groupId: group.id,
         logsCount: data.logs?.length || 0
       });
-      res.status(201).json(group);
+      res.status(201).json({
+        ...group,
+        processingMode: 'sync'
+      });
     } catch (error) {
       logError('Failed to receive equipment logs', error, {
         equipamentoId: req.equipamento?.id
@@ -45,7 +78,13 @@ export class EquipamentoLogController {
   async getLogsTableData(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const tableData = await this.equipamentoLogService.getLogsTableData(Number(id));
+      const page = req.query.page ? Number(req.query.page) : undefined;
+      const pageSize = req.query.pageSize ? Number(req.query.pageSize) : undefined;
+
+      const tableData = await this.equipamentoLogService.getLogsTableData(Number(id), {
+        page,
+        pageSize
+      });
       res.json(tableData);
     } catch (error) {
       logError('Failed to get logs table data', error, { equipamentoId: req.params.id });
