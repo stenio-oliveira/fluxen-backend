@@ -13,54 +13,30 @@ model equipamento {
   api_key               String?                 @db.Text
   id_cliente            Int?
   cliente               cliente?                @relation(fields: [id_cliente], references: [id], onDelete: Cascade, map: "cliente")
-  equipamento_log       equipamento_log[]
   equipamento_log_grupo equipamento_log_grupo[]
   equipamento_metricas  equipamento_metricas[]
 
   @@index([id_cliente], map: "cliente_idx")
 }
 
-model equipamento_log {
-  id                     Int                    @id @default(autoincrement())
-  id_equipamento_metrica Int
-  valor                  Int
-  id_metrica             Int
-  id_equipamento         Int
-  valor_convertido       Decimal                @default(0) @db.Decimal(10, 0)
-  timestamp              DateTime               @db.DateTime(0)
-  id_grupo               Int?
-  logs                   Json?
-  equipamento            equipamento            @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento")
-  equipamento_metricas   equipamento_metricas   @relation(fields: [id_equipamento_metrica], references: [id], onDelete: Cascade)
-  equipamento_log_grupo  equipamento_log_grupo? @relation(fields: [id_grupo], references: [id], onDelete: Cascade, map: "grupo")
-  metrica                metrica                @relation(fields: [id_metrica], references: [id], onDelete: Cascade, map: "metrica")
-
-  @@index([id_equipamento], map: "equipamento_idx")
-  @@index([id_equipamento_metrica], map: "equipamento_log_id_equipamento_metrica_fkey")
-  @@index([id_grupo], map: "grupo_idx")
-  @@index([id_metrica], map: "metrica_idx")
-}
-
 model equipamento_log_grupo {
-  id              Int               @id @default(autoincrement())
-  timestamp       DateTime?         @db.DateTime(0)
-  id_equipamento  Int?
-  logs            Json?
-  equipamento_log equipamento_log[]
-  equipamento     equipamento?      @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento_relacionado")
+  id             Int          @id @default(autoincrement())
+  timestamp      DateTime?    @db.DateTime(0)
+  id_equipamento Int?
+  logs           Json?
+  equipamento    equipamento? @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento_relacionado")
 
   @@index([id_equipamento], map: "equipamento_relacionado_idx")
 }
 
 model equipamento_metricas {
-  id              Int               @id @default(autoincrement())
-  id_equipamento  Int
-  id_metrica      Int
-  valor_minimo    Float
-  valor_maximo    Float
-  equipamento_log equipamento_log[]
-  equipamento     equipamento       @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento_metrica_id_equipamento_fkey")
-  metrica         metrica           @relation(fields: [id_metrica], references: [id], onDelete: Cascade, map: "equipamento_metrica_id_metrica_fkey")
+  id             Int         @id @default(autoincrement())
+  id_equipamento Int
+  id_metrica     Int
+  valor_minimo   Float
+  valor_maximo   Float
+  equipamento    equipamento @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento_metrica_id_equipamento_fkey")
+  metrica        metrica     @relation(fields: [id_metrica], references: [id], onDelete: Cascade, map: "equipamento_metrica_id_metrica_fkey")
 
   @@index([id_equipamento], map: "equipamento_metrica_id_equipamento_fkey")
   @@index([id_metrica], map: "equipamento_metrica_id_metrica_fkey")
@@ -70,7 +46,6 @@ model metrica {
   id                   Int                    @id @default(autoincrement())
   nome                 String
   unidade              String
-  equipamento_log      equipamento_log[]
   equipamento_metricas equipamento_metricas[]
 }
 
