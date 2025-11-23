@@ -113,14 +113,14 @@ export class UsuarioRepository {
           include: {
             cliente: {
               include: {
-                usuario: {
+                usuario_responsavel: {
                   include: this.include(),
                 },
               },
             },
           },
         });
-        return equip?.cliente?.usuario ? this.format(equip.cliente.usuario) : null;
+        return equip?.cliente?.usuario_responsavel ? this.format(equip.cliente.usuario_responsavel) : null;
       }
     );
     return user;
