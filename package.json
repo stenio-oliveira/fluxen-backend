@@ -11,9 +11,9 @@
     "dev:all": "concurrently --names \"API,WORKER\" --prefix-colors \"blue,green\" \"npm run dev:api\" \"npm run dev:worker\"",
     "dev:api": "tsx watch src/index.ts",
     "dev:worker": "tsx watch src/wokers/logsWorker.ts",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
     "build": "tsc"
   },
   "dependencies": {
