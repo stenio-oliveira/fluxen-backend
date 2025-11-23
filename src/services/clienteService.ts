@@ -13,7 +13,7 @@ export class ClienteService {
     const isAdmin = await this.usuarioRepository.isAdmin(userId);
     const isResponsable = await this.usuarioRepository.isResponsable(userId);
     if (isAdmin) {
-      return this.clienteRepository.findAll(filters);
+      return this.clienteRepository.findByAdministratorUser(userId, filters);
     }
     if (isResponsable) {
       return this.clienteRepository.findByResponsableUser(userId, filters);

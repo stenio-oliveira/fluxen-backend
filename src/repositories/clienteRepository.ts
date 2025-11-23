@@ -14,6 +14,8 @@ export interface ClienteFilters {
 
 export class ClienteRepository {
 
+
+
   findByResponsableUser = async (
     userId: number,
     filters: ClienteFilters,
@@ -56,6 +58,28 @@ export class ClienteRepository {
       }
     );
   };
+  
+
+  findByAdministratorUser = async (userId : number, filters: ClienteFilters, tx?: Prisma.TransactionClient) => { 
+    const { generalFilter, columnFilters } = filters;
+    const executor = tx || prisma;
+    const where: Prisma.clienteWhereInput = {
+      AND: [
+        this.buildGeneralFilter(generalFilter),
+        this.buildColumnFilters(columnFilters),
+        { 
+          id_administrador: userId,
+        }
+      ],
+    };
+    return executor.cliente.findMany({
+      include: this.include(),
+      where,
+      orderBy: {
+        id: 'desc'
+      }
+    }).then(this.formatArray);
+  }
 
   findAll = async (
     filters: ClienteFilters,
@@ -98,7 +122,7 @@ export class ClienteRepository {
 
   include = (): Prisma.clienteInclude => {
     return {
-      usuario: true,
+      usuario_responsavel: true
     };
   };
 
@@ -186,7 +210,7 @@ export class ClienteRepository {
           },
         },
         {
-          usuario: {
+          usuario_responsavel: {
             OR: [
               { nome: { contains: generalFilter } },
               { email: { contains: generalFilter } },
@@ -214,7 +238,7 @@ export class ClienteRepository {
       filters.cnpj = { contains: columnFilters.cnpj };
     }
     if (columnFilters?.responsavel_nome && columnFilters?.responsavel_nome !== "") {
-      filters.usuario = {
+      filters.usuario_responsavel = {
         OR: [
           { nome: { contains: columnFilters.responsavel_nome } },
           { email: { contains: columnFilters.responsavel_nome } },
@@ -228,7 +252,7 @@ export class ClienteRepository {
   format = (cliente: Cliente | any): Cliente => {
     return {
       ...cliente,
-      responsavel_nome: cliente.usuario?.nome,
+      responsavel_nome: cliente.usuario_responsavel?.nome,
     };
   };
 

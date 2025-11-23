@@ -5,6 +5,29 @@ import { EquipmentFilters } from '../controllers/equipamentoController';
 
 export class EquipamentoRepository {
 
+  findByAdministratorUser = async (userId : number, filters: EquipmentFilters, tx?: Prisma.TransactionClient) => { 
+    const { generalFilter, columnFilters } = filters;
+    const executor = tx || prisma;
+    const where: Prisma.equipamentoWhereInput = {
+      AND: [
+        this.buildGeneralFilter(generalFilter),
+        this.buildColumnFilters(columnFilters),
+        { 
+          cliente : { 
+            id_administrador : userId,
+          }
+        }
+      ],
+    };
+    return executor.equipamento.findMany({
+      include: this.include(),
+      where,
+      orderBy: {
+        id: 'desc'
+      }
+    }).then(this.formatArray);
+  }
+
   findByResponsableUser = async (
     userId: number,
     filters: EquipmentFilters,
@@ -17,7 +40,9 @@ export class EquipamentoRepository {
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
         { 
-          id_cliente: client?.id,
+          cliente : { 
+            id_responsavel : userId,
+          }
         }
       ],
     };
@@ -92,7 +117,7 @@ export class EquipamentoRepository {
     return {
       cliente: {
         include: {
-          usuario: true,
+          usuario_responsavel: true,
         },
       },
     };

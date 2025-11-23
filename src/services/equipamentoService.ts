@@ -13,7 +13,7 @@ export class EquipamentoService {
     const isResponsable = await this.usuarioRepository.isResponsable(userId);
 
     if(isAdmin) {
-      return await this.equipamentoRepository.findAll(filters);
+      return await this.equipamentoRepository.findByAdministratorUser(userId, filters);
     }
     if(isResponsable) {
       return await this.equipamentoRepository.findByResponsableUser(userId, filters);

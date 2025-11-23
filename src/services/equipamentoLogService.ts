@@ -229,6 +229,10 @@ export class EquipamentoLogService {
       situationRows = this.buildRowsFromGroups(recentGroups, metrics);
     }
 
+    logInfo('Logs table data', {
+      rowsLength: rows.length,
+    })
+
     return { 
       columns: columnsArray,
       rows,
