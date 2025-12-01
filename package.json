@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "npm run docker:up && node src/scripts/wait-for-rabbitmq.js && npm run start:all",
-    "start:pm2": "npm run docker:up && node src/scripts/wait-for-rabbitmq.js && pm2 start ecosystem.config.js",
+    "start:pm2": "npm run docker:up && node src/scripts/wait-for-rabbitmq.js && npm run start:all",
     "start:all": "concurrently \"npm run start:api\" \"npm run start:worker\"",
     "start:api": "node dist/index.js",
     "start:worker": "node dist/wokers/logsWorker.js",
