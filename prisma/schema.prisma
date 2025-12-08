@@ -8,16 +8,17 @@ datasource db {
 }
 
 model equipamento {
-  id                    Int                     @id @default(autoincrement())
-  nome                  String
-  api_key               String?                 @db.Text
-  id_cliente            Int?
-  created_at            DateTime?               @default(now()) @db.DateTime(0)
-  created_by            Int?
-  cliente               cliente?                @relation(fields: [id_cliente], references: [id], onDelete: Cascade, map: "cliente")
-  created_by_usuario    usuario?                @relation("EquipamentoCreatedBy", fields: [created_by], references: [id], map: "equipamento_created_by")
-  equipamento_log_grupo equipamento_log_grupo[]
-  equipamento_metricas  equipamento_metricas[]
+  id                            Int                             @id @default(autoincrement())
+  nome                          String
+  api_key                       String?                         @db.Text
+  id_cliente                    Int?
+  created_at                    DateTime?                       @default(now()) @db.DateTime(0)
+  created_by                    Int?
+  cliente                       cliente?                        @relation(fields: [id_cliente], references: [id], onDelete: Cascade, map: "cliente")
+  created_by_usuario            usuario?                        @relation("EquipamentoCreatedBy", fields: [created_by], references: [id], map: "equipamento_created_by")
+  equipamento_log_grupo         equipamento_log_grupo[]
+  equipamento_metricas          equipamento_metricas[]
+  usuario_equipamento_dashboard usuario_equipamento_dashboard[]
 
   @@index([id_cliente], map: "cliente_idx")
   @@index([created_by])
@@ -66,28 +67,29 @@ model perfil {
 }
 
 model usuario {
-  id                                        Int              @id @default(autoincrement())
+  id                                        Int                             @id @default(autoincrement())
   nome                                      String
-  email                                     String           @unique
+  email                                     String                          @unique
   senha                                     String
-  username                                  String           @unique
-  created_at                                DateTime?        @default(now()) @db.DateTime(0)
+  username                                  String                          @unique
+  created_at                                DateTime?                       @default(now()) @db.DateTime(0)
   created_by                                Int?
-  stripe_customer_id                        String?          @unique @db.VarChar(255)
-  stripe_subscription_id                    String?          @unique @db.VarChar(255)
-  subscription_status                       String?          @db.VarChar(50)
-  subscription_current_period_start         DateTime?        @db.DateTime(0)
-  subscription_current_period_end           DateTime?        @db.DateTime(0)
-  subscription_cancel_at_period_end         Boolean?         @default(false)
-  plan_name                                 String?          @db.VarChar(100)
-  stripe_price_id                           String?          @db.VarChar(255)
-  cliente_cliente_id_administradorTousuario cliente[]        @relation("cliente_id_administradorTousuario")
-  created_clientes                          cliente[]        @relation("ClienteCreatedBy")
-  cliente_responsavel                       cliente[]        @relation("ClienteResponsavel")
-  created_equipamentos                      equipamento[]    @relation("EquipamentoCreatedBy")
-  created_metricas                          metrica[]        @relation("MetricaCreatedBy")
-  created_by_usuario                        usuario?         @relation("UsuarioCreatedBy", fields: [created_by], references: [id], map: "usuario_created_by")
-  created_usuarios                          usuario[]        @relation("UsuarioCreatedBy")
+  stripe_customer_id                        String?                         @unique @db.VarChar(255)
+  stripe_subscription_id                    String?                         @unique @db.VarChar(255)
+  subscription_status                       String?                         @db.VarChar(50)
+  subscription_current_period_start         DateTime?                       @db.DateTime(0)
+  subscription_current_period_end           DateTime?                       @db.DateTime(0)
+  subscription_cancel_at_period_end         Boolean?                        @default(false)
+  plan_name                                 String?                         @db.VarChar(100)
+  stripe_price_id                           String?                         @db.VarChar(255)
+  cliente_cliente_id_administradorTousuario cliente[]                       @relation("cliente_id_administradorTousuario")
+  created_clientes                          cliente[]                       @relation("ClienteCreatedBy")
+  cliente_responsavel                       cliente[]                       @relation("ClienteResponsavel")
+  created_equipamentos                      equipamento[]                   @relation("EquipamentoCreatedBy")
+  created_metricas                          metrica[]                       @relation("MetricaCreatedBy")
+  created_by_usuario                        usuario?                        @relation("UsuarioCreatedBy", fields: [created_by], references: [id], map: "usuario_created_by")
+  created_usuarios                          usuario[]                       @relation("UsuarioCreatedBy")
+  usuario_equipamento_dashboard             usuario_equipamento_dashboard[]
   usuario_perfil                            usuario_perfil[]
 
   @@index([created_by])
@@ -123,4 +125,17 @@ model cliente {
   @@index([id_responsavel], map: "repsponsavel_idx")
   @@index([id_administrador], map: "administrador_idx")
   @@index([created_by])
+}
+
+model usuario_equipamento_dashboard {
+  id             Int         @id @default(autoincrement())
+  id_usuario     Int
+  id_equipamento Int
+  created_at     DateTime?   @default(now()) @db.DateTime(0)
+  equipamento    equipamento @relation(fields: [id_equipamento], references: [id], onDelete: Cascade)
+  usuario        usuario     @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+
+  @@unique([id_usuario, id_equipamento], map: "usuario_equipamento_dashboard_unique")
+  @@index([id_usuario])
+  @@index([id_equipamento])
 }

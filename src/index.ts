@@ -9,6 +9,7 @@ import metricaRouter from './routers/metricaRouter';
 import perfilRouter from './routers/usarioPerfilRouter';
 import usuarioPerfilRouter from './routers/usarioPerfilRouter';
 import usuarioRouter from './routers/usuarioRouter';
+import usuarioEquipamentoDashboardRouter from './routers/usuarioEquipamentoDashboardRouter';
 import cors from "cors";
 import morgan from "morgan";
 import { logger, logError, logInfo, logWarn } from './utils/logger';
@@ -53,6 +54,7 @@ app.use('/api', metricaRouter);
 app.use('/api', perfilRouter);
 app.use('/api', usuarioPerfilRouter);
 app.use('/api', usuarioRouter);
+app.use('/api', usuarioEquipamentoDashboardRouter);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
