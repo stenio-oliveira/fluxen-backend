@@ -72,12 +72,10 @@ export class UsuarioEquipamentoDashboardRepository {
   ): Promise<UsuarioEquipamentoDashboard | null> {
     const executor = tx || prisma;
     
-    const item = await executor.usuario_equipamento_dashboard.findUnique({
+    const item = await executor.usuario_equipamento_dashboard.findFirst({
       where: {
-        usuario_equipamento_dashboard_unique: {
-          id_usuario,
-          id_equipamento
-        }
+        id_usuario,
+        id_equipamento
       },
       include: this.include()
     });
@@ -116,13 +114,18 @@ export class UsuarioEquipamentoDashboardRepository {
     tx?: Prisma.TransactionClient
   ): Promise<void> {
     const executor = tx || prisma;
-    
+    const unique = await executor.usuario_equipamento_dashboard.findFirst({
+      where: {
+        id_usuario,
+        id_equipamento
+      },
+      select: {
+        id: true
+      }
+    });
     await executor.usuario_equipamento_dashboard.delete({
       where: {
-        usuario_equipamento_dashboard_unique: {
-          id_usuario,
-          id_equipamento
-        }
+        id : unique?.id
       }
     });
   }

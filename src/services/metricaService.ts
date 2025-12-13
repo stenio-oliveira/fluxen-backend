@@ -18,13 +18,17 @@ export class MetricaService {
     id_metrica: number,
     id_equipamento: number,
     valor_minimo: number,
-    valor_maximo: number
+    valor_maximo: number,
+    alarme_minimo: number | null = null,
+    alarme_maximo: number | null = null
   ): Promise<Metrica | null> {
     return this.metricaRepository.associateMetricToEquipamento(
       id_metrica,
       id_equipamento,
       valor_minimo,
-      valor_maximo
+      valor_maximo,
+      alarme_minimo,
+      alarme_maximo
     );
   }
 

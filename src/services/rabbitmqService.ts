@@ -88,7 +88,7 @@ class RabbitMQService {
         if (!this.channel) {
             throw new Error('RabbitMQ channel not initialized');
         }
-''
+
         await this.channel.prefetch(10); // Processar até 10 mensagens por vez
 
         await this.channel.consume(this.queueName, async (message) => {

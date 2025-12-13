@@ -6,5 +6,7 @@ export interface EquipamentoMetrica {
   id_metrica: number;
   valor_minimo: number;
   valor_maximo: number;
+  alarme_minimo?: number | null;
+  alarme_maximo?: number | null;
   metrica?: Metrica;
 }

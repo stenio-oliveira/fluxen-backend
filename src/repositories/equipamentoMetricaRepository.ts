@@ -57,6 +57,31 @@ export class EquipamentoMetricaRepository {
     });
   }
 
+  async findByEquipamentoAndMetrica(
+    id_equipamento: number,
+    id_metrica: number,
+    tx?: Prisma.TransactionClient
+  ): Promise<EquipamentoMetrica | null> {
+    if (tx) {
+      return tx.equipamento_metricas.findFirst({
+        where: {
+          id_equipamento,
+          id_metrica
+        },
+        include: { metrica: true }
+      });
+    }
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      return tx.equipamento_metricas.findFirst({
+        where: {
+          id_equipamento,
+          id_metrica
+        },
+        include: { metrica: true }
+      });
+    });
+  }
+
   async create(
     data: CreateEquipamentoMetricaDTO,
     tx?: Prisma.TransactionClient

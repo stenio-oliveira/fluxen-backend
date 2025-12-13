@@ -42,12 +42,14 @@ export class MetricaController {
   async associateMetricToEquipamento(req: Request, res: Response): Promise<void> {
     try {
       const { id_equipamento, id_metrica } = req.params;
-      const {valor_minimo, valor_maximo} = req.body;
+      const { valor_minimo, valor_maximo, alarme_minimo, alarme_maximo } = req.body;
       const metrica = await this.metricaService.associateMetricToEquipamento(
         Number(id_metrica),
         Number(id_equipamento),
         Number(valor_minimo),
-        Number(valor_maximo)
+        Number(valor_maximo),
+        alarme_minimo !== undefined && alarme_minimo !== null ? Number(alarme_minimo) : null,
+        alarme_maximo !== undefined && alarme_maximo !== null ? Number(alarme_maximo) : null
       );
       res.json(metrica);
     } catch (error) {

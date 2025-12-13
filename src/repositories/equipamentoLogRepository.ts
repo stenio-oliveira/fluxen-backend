@@ -63,6 +63,49 @@ export class EquipamentoLogRepository {
 
     return { groups, total };
   }
+
+  async findGroupedByTimestampWithTimeRange(
+    id_equipamento: number,
+    startDate: Date,
+    endDate: Date,
+    options: PaginationOptions = {},
+    transaction?: Prisma.TransactionClient
+  ): Promise<GroupedLogsResult> {
+    const page = Math.max(options.page ?? 1, 1);
+    const pageSize = Math.max(Math.min(options.pageSize ?? 50, 500), 1);
+    const skip = (page - 1) * pageSize;
+    const take = pageSize;
+
+    const executor = transaction ?? prisma;
+
+    const [groups, total] = await Promise.all([
+      executor.equipamento_log_grupo.findMany({
+        where: {
+          id_equipamento,
+          timestamp: {
+            gte: startDate,
+            lte: endDate
+          }
+        },
+        orderBy: {
+          timestamp: 'asc' // Para gráficos, ordem crescente faz mais sentido
+        },
+        skip,
+        take
+      }),
+      executor.equipamento_log_grupo.count({
+        where: {
+          id_equipamento,
+          timestamp: {
+            gte: startDate,
+            lte: endDate
+          }
+        }
+      })
+    ]);
+
+    return { groups, total };
+  }
     
 }
 

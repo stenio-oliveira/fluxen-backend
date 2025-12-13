@@ -40,6 +40,8 @@ model equipamento_metricas {
   id_metrica     Int
   valor_minimo   Float
   valor_maximo   Float
+  alarme_minimo  Float?      @db.Float
+  alarme_maximo  Float?      @db.Float
   equipamento    equipamento @relation(fields: [id_equipamento], references: [id], onDelete: Cascade, map: "equipamento_metrica_id_equipamento_fkey")
   metrica        metrica     @relation(fields: [id_metrica], references: [id], onDelete: Cascade, map: "equipamento_metrica_id_metrica_fkey")
 
@@ -87,6 +89,7 @@ model usuario {
   cliente_responsavel                       cliente[]                       @relation("ClienteResponsavel")
   created_equipamentos                      equipamento[]                   @relation("EquipamentoCreatedBy")
   created_metricas                          metrica[]                       @relation("MetricaCreatedBy")
+  notificacoes                              notificacao[]
   created_by_usuario                        usuario?                        @relation("UsuarioCreatedBy", fields: [created_by], references: [id], map: "usuario_created_by")
   created_usuarios                          usuario[]                       @relation("UsuarioCreatedBy")
   usuario_equipamento_dashboard             usuario_equipamento_dashboard[]
@@ -138,4 +141,17 @@ model usuario_equipamento_dashboard {
   @@unique([id_usuario, id_equipamento], map: "usuario_equipamento_dashboard_unique")
   @@index([id_usuario])
   @@index([id_equipamento])
+}
+
+model notificacao {
+  id          Int       @id @default(autoincrement())
+  id_usuario  Int
+  descricao   String    @db.Text
+  visualizado Boolean   @default(false)
+  created_at  DateTime? @default(now()) @db.DateTime(0)
+  usuario     usuario   @relation(fields: [id_usuario], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_usuario])
+  @@index([visualizado])
+  @@index([created_at])
 }

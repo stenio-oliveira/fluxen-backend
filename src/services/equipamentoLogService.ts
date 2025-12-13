@@ -5,16 +5,19 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import { CreateEquipamentoLogsDTO } from "../dto/HttpRequestDTOS/CreateEquipamentoLogsDTO";
 import { rabbitMQService } from "./rabbitmqService";
 import { logError, logInfo } from "../utils/logger";
+import { NotificacaoService } from "./notificacaoService";
 
 const prisma = new PrismaClient();
 
 export class EquipamentoLogService {
   private equipamentoLogRepository: EquipamentoLogRepository;
   private equipamentoMetricaRepository: EquipamentoMetricaRepository;
+  private notificacaoService: NotificacaoService;
 
   constructor() {
     this.equipamentoLogRepository = new EquipamentoLogRepository();
     this.equipamentoMetricaRepository = new EquipamentoMetricaRepository();
+    this.notificacaoService = new NotificacaoService();
   }
 
   async sendLogsToRabbitMQ(data: CreateEquipamentoLogsDTO): Promise<boolean> {
@@ -68,6 +71,7 @@ export class EquipamentoLogService {
           equipamentoMetrica
         );
       }
+      const timestamp = new Date();
       for (const log of data.logs) {
         const equipamentoMetrica = metricaToEquipamentoMetrica.get(
           log.id_metrica || 0
@@ -95,7 +99,25 @@ export class EquipamentoLogService {
 
           // Se não foi fornecido timestamp, usar o atual
           if (!log.timestamp) {
-            log.timestamp = new Date();
+            log.timestamp = timestamp;
+          }
+
+          // Criar notificações se houver alarme (fora da transação para não bloquear)
+          if (log.valor_convertido !== null && log.valor_convertido !== undefined) {
+            // Processar notificações de forma assíncrona após a transação
+            const valorConvertido = log.valor_convertido;
+            const idMetrica = log.id_metrica || 0;
+            const logTimestamp = log.timestamp || timestamp;
+            setImmediate(() => {
+              this.notificacaoService.createNotificationsForLog(
+                equipamentoId,
+                { id_metrica: idMetrica, valor_convertido: valorConvertido },
+                equipamentoMetrica,
+                logTimestamp
+              ).catch(error => {
+                logError('Failed to create notifications for log', error);
+              });
+            });
           }
         }
       }
@@ -131,19 +153,44 @@ export class EquipamentoLogService {
   }
 
   private checkValueLimits(value: number, metricId: number, metrics: any[]): 'min' | 'max' | 'none' {
-    const metric = metrics.find(m => m.id_metrica === metricId);
-    if (!metric || !metric.valor_maximo) return 'none';
+    // metrics é um array de EquipamentoMetrica[] (já vem do findByEquipamentoId)
+    // Cada item já contém: id, id_equipamento, id_metrica, valor_minimo, valor_maximo, alarme_minimo, alarme_maximo, metrica
+    const equipamentoMetrica = metrics.find(m => m.id_metrica === metricId);
 
-    const range = metric.valor_maximo - metric.valor_minimo;
-    const threshold = range * 0.1; // 10% da faixa como limite de alerta
-    if (value <= metric.valor_minimo + threshold) {
-      return 'min';
+    if (!equipamentoMetrica || !equipamentoMetrica.valor_maximo) {
+      return 'none';
     }
 
-    if (value >= metric.valor_maximo - threshold) {
-      return 'max';
+    console.log('[checkValueLimits]', {
+      metricId,
+      value,
+      equipamentoMetrica: {
+        id: equipamentoMetrica.id,
+        id_metrica: equipamentoMetrica.id_metrica,
+        alarme_minimo: equipamentoMetrica.alarme_minimo,
+        alarme_maximo: equipamentoMetrica.alarme_maximo,
+        valor_minimo: equipamentoMetrica.valor_minimo,
+        valor_maximo: equipamentoMetrica.valor_maximo
+      }
+    });
+
+    // Se alarme_minimo está configurado, verificar se o valor está abaixo
+    if (equipamentoMetrica.alarme_minimo !== null && equipamentoMetrica.alarme_minimo !== undefined) {
+      if (value <= equipamentoMetrica.alarme_minimo) {
+        console.log(`[ALERTA MIN] metricId: ${metricId}, valor: ${value}, alarme_minimo: ${equipamentoMetrica.alarme_minimo}`);
+        return 'min';
+      }
     }
 
+    // Se alarme_maximo está configurado, verificar se o valor está acima
+    if (equipamentoMetrica.alarme_maximo !== null && equipamentoMetrica.alarme_maximo !== undefined) {
+      if (value >= equipamentoMetrica.alarme_maximo) {
+        console.log(`[ALERTA MAX] metricId: ${metricId}, valor: ${value}, alarme_maximo: ${equipamentoMetrica.alarme_maximo}`);
+        return 'max';
+      }
+    }
+
+    // Se não há alarmes configurados, retornar 'none' (sem alarme)
     return 'none';
   }
 

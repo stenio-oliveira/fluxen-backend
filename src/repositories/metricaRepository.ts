@@ -126,7 +126,9 @@ export class MetricaRepository {
     id_metrica: number,
     id_equipamento: number,
     valor_minimo: number,
-    valor_maximo: number
+    valor_maximo: number,
+    alarme_minimo: number | null = null,
+    alarme_maximo: number | null = null
   ): Promise<Metrica | null> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const equipamentMetrica = await tx.equipamento_metricas.create({
@@ -135,6 +137,8 @@ export class MetricaRepository {
           id_metrica,
           valor_minimo,
           valor_maximo,
+          alarme_minimo,
+          alarme_maximo,
         },
       });
       const metrica = await this.findById(id_metrica, tx);
