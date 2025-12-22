@@ -25,7 +25,8 @@ export class UsuarioEquipamentoDashboardRepository {
             }
           }
         }
-      }
+      },
+      metrica: true
     };
   };
 
@@ -34,9 +35,11 @@ export class UsuarioEquipamentoDashboardRepository {
       id: item.id,
       id_usuario: item.id_usuario,
       id_equipamento: item.id_equipamento,
+      id_metrica: item.id_metrica,
       created_at: item.created_at,
       usuario: item.usuario,
-      equipamento: item.equipamento as Equipamento
+      equipamento: item.equipamento as Equipamento,
+      metrica: item.metrica
     };
   };
 
@@ -89,6 +92,7 @@ export class UsuarioEquipamentoDashboardRepository {
   async create(
     id_usuario: number,
     id_equipamento: number,
+    id_metrica?: number | null,
     tx?: Prisma.TransactionClient
   ): Promise<UsuarioEquipamentoDashboard> {
     const executor = tx || prisma;
@@ -97,6 +101,7 @@ export class UsuarioEquipamentoDashboardRepository {
       data: {
         id_usuario,
         id_equipamento,
+        id_metrica: id_metrica || null,
         created_at: new Date()
       },
       include: this.include()
@@ -106,28 +111,45 @@ export class UsuarioEquipamentoDashboardRepository {
   }
 
   /**
-   * Remove um equipamento do dashboard do usuário
+   * Remove um equipamento do dashboard do usuário (por ID da associação)
+   */
+  async deleteById(
+    id: number,
+    tx?: Prisma.TransactionClient
+  ): Promise<void> {
+    const executor = tx || prisma;
+    await executor.usuario_equipamento_dashboard.delete({
+      where: { id }
+    });
+  }
+
+  /**
+   * Remove um equipamento do dashboard do usuário (com métrica específica)
    */
   async delete(
     id_usuario: number,
     id_equipamento: number,
+    id_metrica?: number | null,
     tx?: Prisma.TransactionClient
   ): Promise<void> {
     const executor = tx || prisma;
     const unique = await executor.usuario_equipamento_dashboard.findFirst({
       where: {
         id_usuario,
-        id_equipamento
+        id_equipamento,
+        id_metrica: id_metrica || null
       },
       select: {
         id: true
       }
     });
-    await executor.usuario_equipamento_dashboard.delete({
-      where: {
-        id : unique?.id
-      }
-    });
+    if (unique) {
+      await executor.usuario_equipamento_dashboard.delete({
+        where: {
+          id: unique.id
+        }
+      });
+    }
   }
 
   /**
@@ -147,11 +169,12 @@ export class UsuarioEquipamentoDashboardRepository {
   }
 
   /**
-   * Verifica se um equipamento já está no dashboard do usuário
+   * Verifica se um equipamento já está no dashboard do usuário (com a mesma métrica)
    */
   async exists(
     id_usuario: number,
     id_equipamento: number,
+    id_metrica?: number | null,
     tx?: Prisma.TransactionClient
   ): Promise<boolean> {
     const executor = tx || prisma;
@@ -159,7 +182,8 @@ export class UsuarioEquipamentoDashboardRepository {
     const count = await executor.usuario_equipamento_dashboard.count({
       where: {
         id_usuario,
-        id_equipamento
+        id_equipamento,
+        id_metrica: id_metrica || null
       }
     });
 

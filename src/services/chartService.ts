@@ -158,6 +158,8 @@ export class ChartService {
             unidade: equipamentoMetrica.metrica.unidade,
           },
           timeRange,
+          maxValue: equipamentoMetrica.valor_maximo,
+          minValue: equipamentoMetrica.valor_minimo,
         }
       };
     } catch (error) {
@@ -293,6 +295,8 @@ export class ChartService {
             unidade: equipamentoMetrica.metrica.unidade,
           },
           timeRange,
+          maxValue: equipamentoMetrica.valor_maximo,
+          minValue: equipamentoMetrica.valor_minimo,
         }
       };
     } catch (error) {

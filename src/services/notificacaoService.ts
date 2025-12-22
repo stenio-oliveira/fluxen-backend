@@ -68,22 +68,54 @@ export class NotificacaoService {
       }
       const descricao = `Alerta ${tipoAlerta === 'min' ? 'MÍNIMO' : 'MÁXIMO'}: Equipamento "${equipamento.nome}" - Métrica "${metrica?.nome || 'Desconhecida'}" com valor ${valorConvertido.toFixed(2)} ${metrica?.unidade || ''} (${timestamp.toLocaleString('pt-BR')})`;
 
-      // Criar notificações para responsável e administrador
+      // Criar notificações para responsáveis, gestores e administradores do cliente
+      // Buscar todos os usuários com perfil de responsável (id_perfil: 2) ou gestor (id_perfil: 3) para este cliente
+      const usuariosNotificacao = await prisma.usuario_perfil_cliente.findMany({
+        where: {
+          id_cliente: cliente.id,
+          id_perfil: {
+            in: [2, 3] // 2 = responsável, 3 = gestor
+          }
+        },
+        select: {
+          id_usuario: true
+        }
+      });
+
+      // Buscar também administradores (id_perfil: 1) que podem ter acesso a todos os clientes
+      const administradores = await prisma.usuario_perfil.findMany({
+        where: {
+          id_perfil: 1 // 1 = administrador
+        },
+        select: {
+          id_usuario: true
+        }
+      });
+
       const notificacoesParaCriar: Array<{ id_usuario: number; descricao: string }> = [];
+      const usuariosUnicos = new Set<number>();
 
-      if (cliente.id_responsavel) {
-        notificacoesParaCriar.push({
-          id_usuario: cliente.id_responsavel,
-          descricao
-        });
-      }
+      // Adicionar responsáveis e gestores do cliente
+      usuariosNotificacao.forEach(upc => {
+        if (!usuariosUnicos.has(upc.id_usuario)) {
+          usuariosUnicos.add(upc.id_usuario);
+          notificacoesParaCriar.push({
+            id_usuario: upc.id_usuario,
+            descricao
+          });
+        }
+      });
 
-      if (cliente.id_administrador && cliente.id_administrador !== cliente.id_responsavel) {
-        notificacoesParaCriar.push({
-          id_usuario: cliente.id_administrador,
-          descricao
-        });
-      }
+      // Adicionar administradores
+      administradores.forEach(up => {
+        if (!usuariosUnicos.has(up.id_usuario)) {
+          usuariosUnicos.add(up.id_usuario);
+          notificacoesParaCriar.push({
+            id_usuario: up.id_usuario,
+            descricao
+          });
+        }
+      });
 
       if (notificacoesParaCriar.length > 0) {
         await this.notificacaoRepository.createMany(notificacoesParaCriar);
@@ -98,21 +130,45 @@ export class NotificacaoService {
   async processNotificationsForUser(userId: number): Promise<void> {
     logInfo(`[Scan] Starting notification scan for user ${userId}`);
 
-    // Buscar todos os clientes onde o usuário é responsável ou administrador (usando Prisma diretamente para evitar dependência circular)
-    const clientesResponsavel = await prisma.cliente.findMany({
+    // Verificar se o usuário é administrador (tem perfil 1)
+    const isAdmin = await prisma.usuario_perfil.findFirst({
       where: {
-        id_responsavel: userId
+        id_usuario: userId,
+        id_perfil: 1
       }
     });
 
-    const clientesAdministrador = await prisma.cliente.findMany({
+    let clientesIds: number[] = [];
+
+    if (isAdmin) {
+      // Se for admin, buscar todos os clientes
+      const todosClientes = await prisma.cliente.findMany({
+        select: { id: true }
+      });
+      clientesIds = todosClientes.map(c => c.id);
+    } else {
+      // Buscar clientes onde o usuário é responsável (id_perfil: 2) ou gestor (id_perfil: 3)
+      const clientesUsuario = await prisma.usuario_perfil_cliente.findMany({
+        where: {
+          id_usuario: userId,
+          id_perfil: {
+            in: [2, 3] // 2 = responsável, 3 = gestor
+          }
+        },
+        select: {
+          id_cliente: true
+        }
+      });
+      clientesIds = [...new Set(clientesUsuario.map(c => c.id_cliente))];
+    }
+
+    const todosClientes = await prisma.cliente.findMany({
       where: {
-        id_administrador: userId
+        id: {
+          in: clientesIds
+        }
       }
     });
-
-    const todosClientes = [...clientesResponsavel, ...clientesAdministrador];
-    const clientesIds = [...new Set(todosClientes.map(c => c.id))];
 
     if (clientesIds.length === 0) {
       logInfo(`[Scan] User ${userId} has no associated clients - skipping`);
@@ -218,23 +274,55 @@ export class NotificacaoService {
           const metrica = equipamentoMetrica.metrica;
           const descricao = `Alerta ${tipoAlerta === 'min' ? 'MÍNIMO' : 'MÁXIMO'}: Equipamento "${equipamento.nome}" - Métrica "${metrica?.nome || 'Desconhecida'}" com valor ${valorConvertido.toFixed(2)} ${metrica?.unidade || ''} (${new Date(logGrupo.timestamp || new Date()).toLocaleString('pt-BR')})`;
 
-          // Criar notificação para responsável e administrador do cliente
+          // Criar notificação para responsáveis, gestores e administradores do cliente
           const cliente = todosClientes.find(c => c && c.id === equipamento.id_cliente);
           if (cliente) {
-            // Adicionar notificação para responsável se existir
-            if (cliente.id_responsavel) {
-              notificacoesParaCriar.push({
-                id_usuario: cliente.id_responsavel,
-                descricao
-              });
-            }
-            // Adicionar notificação para administrador se existir e for diferente do responsável
-            if (cliente.id_administrador && cliente.id_administrador !== cliente.id_responsavel) {
-              notificacoesParaCriar.push({
-                id_usuario: cliente.id_administrador,
-                descricao
-              });
-            }
+            // Buscar todos os usuários com perfil de responsável (id_perfil: 2) ou gestor (id_perfil: 3) para este cliente
+            const usuariosNotificacao = await prisma.usuario_perfil_cliente.findMany({
+              where: {
+                id_cliente: cliente.id,
+                id_perfil: {
+                  in: [2, 3] // 2 = responsável, 3 = gestor
+                }
+              },
+              select: {
+                id_usuario: true
+              }
+            });
+
+            // Buscar também administradores (id_perfil: 1)
+            const administradores = await prisma.usuario_perfil.findMany({
+              where: {
+                id_perfil: 1 // 1 = administrador
+              },
+              select: {
+                id_usuario: true
+              }
+            });
+
+            const usuariosUnicos = new Set<number>();
+
+            // Adicionar responsáveis e gestores do cliente
+            usuariosNotificacao.forEach(upc => {
+              if (!usuariosUnicos.has(upc.id_usuario)) {
+                usuariosUnicos.add(upc.id_usuario);
+                notificacoesParaCriar.push({
+                  id_usuario: upc.id_usuario,
+                  descricao
+                });
+              }
+            });
+
+            // Adicionar administradores
+            administradores.forEach(up => {
+              if (!usuariosUnicos.has(up.id_usuario)) {
+                usuariosUnicos.add(up.id_usuario);
+                notificacoesParaCriar.push({
+                  id_usuario: up.id_usuario,
+                  descricao
+                });
+              }
+            });
           }
         }
       }

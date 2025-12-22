@@ -43,9 +43,14 @@ export class EquipamentoMetricaController {
   async updateEquipamentoMetrica(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const metrica = await this.equipamentoMetricaService.updateEquipamentoMetrica(Number(id), req.body);
+      const userId = req.user?.id ? Number(req.user.id) : undefined;
+      const metrica = await this.equipamentoMetricaService.updateEquipamentoMetrica(Number(id), req.body, userId);
       res.json(metrica);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes('permissão')) {
+        res.status(403).json({ message: error.message });
+        return;
+      }
       logError('Failed to update equipment metric', error, { metricaId: req.params.id });
       res.status(500).json({ message: 'Erro ao atualizar métrica de equipamento' });
     }
@@ -54,9 +59,14 @@ export class EquipamentoMetricaController {
   async deleteEquipamentoMetrica(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      await this.equipamentoMetricaService.deleteEquipamentoMetrica(Number(id));
+      const userId = req.user?.id ? Number(req.user.id) : undefined;
+      await this.equipamentoMetricaService.deleteEquipamentoMetrica(Number(id), userId);
       res.status(204).send();
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes('permissão')) {
+        res.status(403).json({ message: error.message });
+        return;
+      }
       logError('Failed to delete equipment metric', error, { metricaId: req.params.id });
       res.status(500).json({ message: 'Erro ao deletar métrica de equipamento' });
     }

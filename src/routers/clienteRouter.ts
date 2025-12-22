@@ -6,6 +6,12 @@ const router = Router();
 const clienteController = new ClienteController();
 
 // Rotas com autenticação JWT
+// IMPORTANTE: Rotas específicas devem vir ANTES de rotas com parâmetros dinâmicos
+router.get(
+  "/clientes/manager",
+  authenticateToken,
+  clienteController.getClientesByManager.bind(clienteController)
+);
 router.get(
   "/clientes",
   authenticateToken,

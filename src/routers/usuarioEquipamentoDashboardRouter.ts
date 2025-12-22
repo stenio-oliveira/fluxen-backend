@@ -18,6 +18,13 @@ router.post(
   controller.addEquipamentoToDashboard.bind(controller)
 );
 
+// Rota para deletar por ID da associação
+router.delete(
+  '/usuario-equipamento-dashboard/item/:id',
+  authenticateToken,
+  controller.removeEquipamentoFromDashboardById.bind(controller)
+);
+
 router.delete(
   '/usuario-equipamento-dashboard/:userId/:equipamentoId',
   authenticateToken,

@@ -1,12 +1,11 @@
 import { UsuarioEquipamentoDashboardRepository } from '../repositories/usuarioEquipamentoDashboardRepository';
 import { UsuarioEquipamentoDashboard } from '../types/UsuarioEquipamentoDashboard';
 import { EquipamentoRepository } from '../repositories/equipamentoRepository';
-import { UsuarioRepository } from '../repositories/usuarioRepository';
+import { hasEquipamentoPermission } from '../utils/equipamentoPermissionHelper';
 
 export class UsuarioEquipamentoDashboardService {
   private repository = new UsuarioEquipamentoDashboardRepository();
   private equipamentoRepository = new EquipamentoRepository();
-  private usuarioRepository = new UsuarioRepository();
 
   /**
    * Busca todos os equipamentos do dashboard do usuário
@@ -18,10 +17,13 @@ export class UsuarioEquipamentoDashboardService {
   /**
    * Adiciona um equipamento ao dashboard do usuário
    * Verifica se o usuário tem permissão para ver o equipamento
+   * Como os equipamentos já são filtrados por perfil x cliente, se o equipamento
+   * aparece para o usuário, ele pode adicioná-lo ao seu dashboard
    */
   async addEquipamentoToDashboard(
     userId: number,
-    equipamentoId: number
+    equipamentoId: number,
+    id_metrica?: number | null
   ): Promise<UsuarioEquipamentoDashboard> {
     // Verifica se o equipamento existe
     const equipamento = await this.equipamentoRepository.findById(equipamentoId);
@@ -29,37 +31,48 @@ export class UsuarioEquipamentoDashboardService {
       throw new Error('Equipamento não encontrado');
     }
 
-    // Verifica se o usuário tem permissão para ver este equipamento
-    const isAdmin = await this.usuarioRepository.isAdmin(userId);
-    const isResponsable = await this.usuarioRepository.isResponsable(userId);
-    
-    if (!isAdmin && !isResponsable) {
-      throw new Error('Usuário não tem permissão para adicionar equipamentos ao dashboard');
+    if (!equipamento.id_cliente) {
+      throw new Error('Equipamento não está associado a um cliente');
     }
+    // Verificar se o usuário tem permissão básica para acessar o equipamento
+    const hasPermission = await hasEquipamentoPermission(userId, equipamentoId);
 
-    // Verifica se já está no dashboard
-    const exists = await this.repository.exists(userId, equipamentoId);
+    if (!hasPermission) {
+      throw new Error('Usuário não tem permissão para adicionar este equipamento ao dashboard');
+    }
+    // Verifica se já está no dashboard com a mesma métrica
+    const exists = await this.repository.exists(userId, equipamentoId, id_metrica);
     if (exists) {
-      throw new Error('Equipamento já está no dashboard');
+      throw new Error('Esta combinação de equipamento e métrica já está no dashboard');
     }
 
-    return this.repository.create(userId, equipamentoId);
+    return this.repository.create(userId, equipamentoId, id_metrica);
   }
 
   /**
-   * Remove um equipamento do dashboard do usuário
+   * Remove um equipamento do dashboard do usuário (por ID da associação)
+   */
+  async removeEquipamentoFromDashboardById(
+    id: number
+  ): Promise<void> {
+    await this.repository.deleteById(id);
+  }
+
+  /**
+   * Remove um equipamento do dashboard do usuário (com métrica específica)
    */
   async removeEquipamentoFromDashboard(
     userId: number,
-    equipamentoId: number
+    equipamentoId: number,
+    id_metrica?: number | null
   ): Promise<void> {
     // Verifica se existe a associação
-    const exists = await this.repository.exists(userId, equipamentoId);
+    const exists = await this.repository.exists(userId, equipamentoId, id_metrica);
     if (!exists) {
       throw new Error('Equipamento não está no dashboard');
     }
 
-    await this.repository.delete(userId, equipamentoId);
+    await this.repository.delete(userId, equipamentoId, id_metrica);
   }
 
   /**
@@ -67,9 +80,10 @@ export class UsuarioEquipamentoDashboardService {
    */
   async isEquipamentoInDashboard(
     userId: number,
-    equipamentoId: number
+    equipamentoId: number,
+    id_metrica?: number | null
   ): Promise<boolean> {
-    return this.repository.exists(userId, equipamentoId);
+    return this.repository.exists(userId, equipamentoId, id_metrica);
   }
 }
 

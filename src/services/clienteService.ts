@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client';
 import { ClienteFilters } from '../repositories/clienteRepository';
 import { ClienteRepository } from '../repositories/clienteRepository';
 import { UsuarioRepository } from '../repositories/usuarioRepository';
-import { Cliente } from '../types/Cliente';
+import { Cliente, CreateClientDTO } from '../types/Cliente';
 import { prisma } from '..';
 
 export class ClienteService {
@@ -12,41 +12,59 @@ export class ClienteService {
   async getClientes(userId: number, filters: ClienteFilters): Promise<Cliente[] | void[]> {
     const isAdmin = await this.usuarioRepository.isAdmin(userId);
     const isResponsable = await this.usuarioRepository.isResponsable(userId);
+    const isManager = await this.usuarioRepository.isManager(userId);
+
     if (isAdmin) {
-      return this.clienteRepository.findByAdministratorUser(userId, filters);
+      return this.clienteRepository.findAll(filters);
     }
+
+    if (isManager) {
+      return this.clienteRepository.findByManagerUser(userId, filters);
+    }
+
     if (isResponsable) {
       return this.clienteRepository.findByResponsableUser(userId, filters);
     }
     return [];
   }
 
+  async getClientesByManager(userId: number, filters?: ClienteFilters): Promise<Cliente[] | void[]> {
+    const defaultFilters: ClienteFilters = filters || {
+      columnFilters: {
+        id: "",
+        nome: "",
+        cnpj: "",
+      },
+      generalFilter: "",
+    };
+    return this.clienteRepository.findByManagerUser(userId, defaultFilters);
+  }
+
   async getClienteById(id: number): Promise<Cliente | null> {
     return this.clienteRepository.findById(id);
   }
 
-  async createCliente(data: Partial<Cliente>): Promise<Cliente | null> {
-    // Validação obrigatória do responsável
-    if (!data.id_responsavel) {
-      throw new Error('Usuário responsável é obrigatório');
-    }
-
+  async createCliente(data: Partial<CreateClientDTO>): Promise<Cliente | null> {
+    const { nome, cnpj, relacionamentos = [] } = data;
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const newCliente = await this.clienteRepository.create(data, tx);
-      if (newCliente) {
-        const userProfiles = await this.usuarioRepository.findProfileList(data.id_responsavel || 0, tx);
-        if (userProfiles.some(profile => profile.perfil?.nome === 'Responsável')) {
-          return newCliente;
-        }
-        //se usuario não é responsável, adiciona o perfil de responsável
-        await tx.usuario_perfil.create({
+      const newClient = await this.clienteRepository.create({ nome, cnpj }, tx);
+      if (!newClient) {
+        throw new Error('Erro ao criar cliente');
+      }
+
+      // Criar relacionamentos usuario_perfil_cliente
+      for (const relacionamento of relacionamentos) {
+        const { id_usuario, id_perfil } = relacionamento;
+        await tx.usuario_perfil_cliente.create({
           data: {
-            id_usuario: data.id_responsavel || 0,
-            id_perfil: 2, //responsável
+            id_usuario,
+            id_perfil,
+            id_cliente: newClient.id,
           },
         });
       }
-      return newCliente;
+
+      return newClient;
     });
   }
 

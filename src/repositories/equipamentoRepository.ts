@@ -5,79 +5,101 @@ import { EquipmentFilters } from '../controllers/equipamentoController';
 
 export class EquipamentoRepository {
 
-  findByAdministratorUser = async (userId : number, filters: EquipmentFilters, tx?: Prisma.TransactionClient) => { 
-    const { generalFilter, columnFilters } = filters;
-    const executor = tx || prisma;
-    const where: Prisma.equipamentoWhereInput = {
-      AND: [
-        this.buildGeneralFilter(generalFilter),
-        this.buildColumnFilters(columnFilters),
-        { 
-          cliente : { 
-            id_administrador : userId,
-          }
-        }
-      ],
-    };
-    return executor.equipamento.findMany({
-      include: this.include(),
-      where,
-      orderBy: {
-        id: 'desc'
-      }
-    }).then(this.formatArray);
-  }
-
   findByResponsableUser = async (
     userId: number,
     filters: EquipmentFilters,
     tx?: Prisma.TransactionClient
   ): Promise<Equipamento[] | void[]> => {
+    console.log("findByResponsableUser equipamentos")
+    const executor = tx || prisma;
     const { generalFilter, columnFilters } = filters;
-    const client = await prisma.cliente.findFirst({ where: { id_responsavel: userId } });
+    const clients = await executor.cliente.findMany({
+      where: {
+        usuario_perfil_cliente: {
+          some: {
+            id_usuario: userId,
+            id_perfil: 2,
+          }
+        }
+      }
+    });
+    //clientes em que o usuario é responsável
+    const clientIds = clients.map(client => client.id);
+
     const where: Prisma.equipamentoWhereInput = {
       AND: [
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
-        { 
-          cliente : { 
-            id_responsavel : userId,
-          }
+        {
+          id_cliente: {
+            in: clientIds,
+          },
         }
       ],
     };
 
-    if (tx) {
-      return tx.equipamento
-        .findMany({
-          include: this.include(),
-          where,
-          orderBy: {
-            id: 'desc'
-          }
-        })
-        .then(this.formatArray);
-    }
+    return executor.equipamento
+      .findMany({
+        include: this.include(),
+        where,
+        orderBy: {
+          id: 'desc'
+        }
+      })
+      .then(this.formatArray)
+  };
 
-    return prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        return tx.equipamento
-          .findMany({
-            include: this.include(),
-            where,
-            orderBy: {
-              id: 'desc'
-            }
-          })
-          .then(this.formatArray);
+  findByManagerUser = async (
+    userId: number,
+    filters: EquipmentFilters,
+    tx?: Prisma.TransactionClient
+  ): Promise<Equipamento[] | void[]> => {
+    console.log("findByManagerUser equipamentos")
+    const executor = tx || prisma;
+    const { generalFilter, columnFilters } = filters;
+    const clients = await executor.cliente.findMany({
+      where: {
+        usuario_perfil_cliente: {
+          some: {
+            id_usuario: userId,
+            id_perfil: 3, // id_perfil 3 = gestor
+          }
+        }
       }
-    );
+    });
+    //clientes em que o usuario é gestor
+    const clientIds = clients.map(client => client.id);
+
+    const where: Prisma.equipamentoWhereInput = {
+      AND: [
+        this.buildGeneralFilter(generalFilter),
+        this.buildColumnFilters(columnFilters),
+        {
+          id_cliente: {
+            in: clientIds,
+          },
+        }
+      ],
+    };
+
+    return executor.equipamento
+      .findMany({
+        include: this.include(),
+        where,
+        orderBy: {
+          id: 'desc'
+        }
+      })
+      .then(this.formatArray)
   };
 
   findAll = async (
     filters: EquipmentFilters,
     tx?: Prisma.TransactionClient
   ): Promise<Equipamento[] | void[]> => {
+
+    console.log("findAll equipamentos")
+    const executor = tx || prisma;
     const { generalFilter, columnFilters } = filters;
     const where: Prisma.equipamentoWhereInput = {
       AND: [
@@ -86,40 +108,19 @@ export class EquipamentoRepository {
       ],
     };
 
-    if (tx) {
-      return tx.equipamento
-        .findMany({
-          include: this.include(),
-          where,
-          orderBy: {
-            id: 'desc'
-          }
-        })
-        .then(this.formatArray);
-    }
-
-    return prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        return tx.equipamento
-          .findMany({
-            include: this.include(),
-            where,
-            orderBy: {
-              id: 'desc'
-            }
-          })
-          .then(this.formatArray);
-      }
-    );
+    return executor.equipamento
+      .findMany({
+        include: this.include(),
+        where,
+        orderBy: {
+          id: 'desc'
+        }
+      }).then(this.formatArray);
   };
 
   include = (): Prisma.equipamentoInclude => {
     return {
-      cliente: {
-        include: {
-          usuario_responsavel: true,
-        },
-      },
+      cliente: true,
     };
   };
 

@@ -29,11 +29,17 @@ export class MetricaController {
   async getMetricaByEquipamentoId(req: Request, res: Response): Promise<void> {
     try {
       const { id_equipamento } = req.params;
+      const userId = req.user?.id ? Number(req.user.id) : undefined;
       const metricas = await this.metricaService.getMetricaByEquipamentoId(
-        Number(id_equipamento)
+        Number(id_equipamento),
+        userId
       );
       res.json(metricas);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes('permissão')) {
+        res.status(403).json({ message: error.message });
+        return;
+      }
       logError('Failed to get metrics by equipment ID', error, { equipamentoId: req.params.id_equipamento });
       res.status(500).json({ message: 'Erro ao buscar métricas de equipamento' });
     }
@@ -43,16 +49,22 @@ export class MetricaController {
     try {
       const { id_equipamento, id_metrica } = req.params;
       const { valor_minimo, valor_maximo, alarme_minimo, alarme_maximo } = req.body;
+      const userId = req.user?.id ? Number(req.user.id) : undefined;
       const metrica = await this.metricaService.associateMetricToEquipamento(
         Number(id_metrica),
         Number(id_equipamento),
         Number(valor_minimo),
         Number(valor_maximo),
         alarme_minimo !== undefined && alarme_minimo !== null ? Number(alarme_minimo) : null,
-        alarme_maximo !== undefined && alarme_maximo !== null ? Number(alarme_maximo) : null
+        alarme_maximo !== undefined && alarme_maximo !== null ? Number(alarme_maximo) : null,
+        userId
       );
       res.json(metrica);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes('permissão')) {
+        res.status(403).json({ message: error.message });
+        return;
+      }
       logError('Failed to associate metric to equipment', error);
       res.status(500).json({ message: 'Erro ao associar métrica ao equipamento' });
     }
@@ -61,12 +73,18 @@ export class MetricaController {
   async desassociateMetricToEquipamento(req: Request, res: Response): Promise<void> {
     try {
       const { id_equipamento, id_metrica } = req.params;
+      const userId = req.user?.id ? Number(req.user.id) : undefined;
       const associatedMetrics = await this.metricaService.desassociateMetricToEquipamento(
         Number(id_metrica),
-        Number(id_equipamento)
+        Number(id_equipamento),
+        userId
       );
       res.json(associatedMetrics);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes('permissão')) {
+        res.status(403).json({ message: error.message });
+        return;
+      }
       logError('Failed to desassociate metric from equipment', error);
       res.status(500).json({ message: 'Erro ao desassociar métrica ao equipamento' });
     }

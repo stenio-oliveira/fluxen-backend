@@ -1,6 +1,6 @@
 import { prisma } from '..';
 import { ClientesFilters, UserFilters } from '../controllers/usuarioController';
-import { Usuario } from '../types/Usuario';
+import { CreateUserDTO, Usuario } from '../types/Usuario';
 import { Prisma } from '@prisma/client';
 import { UsuarioPerfil } from '../types/UsuarioPerfil';
 import bcrypt from 'bcrypt';
@@ -13,14 +13,22 @@ export class UsuarioRepository {
     };
   };
 
-  format = (usuario: any): Usuario => {
+  format = async (usuario: any): Promise<Usuario> => {
+    // Verificar se o usuário é gestor (tem perfil de gestor em algum cliente)
+    const isGestor = usuario.id ? await this.isManager(usuario.id) : false;
+    const isResponsavel = usuario.id ? await this.isResponsable(usuario.id) : false;
+    const isAdministrador = usuario.id ? await this.isAdmin(usuario.id) : false;
     return {
       ...usuario,
       perfil_nome: usuario.usuario_perfil?.[0]?.perfil?.nome,
+      is_gestor: isGestor,
+      is_responsavel: isResponsavel,
+      is_administrador: isAdministrador,
     };
   };
 
   async findAll(filters?: UserFilters, tx?: Prisma.TransactionClient): Promise<Usuario[]> {
+    console.log("findAll usuarios")
     if (tx) {
       const where: Prisma.usuarioWhereInput = filters
         ? {
@@ -38,7 +46,7 @@ export class UsuarioRepository {
           id: 'desc'
         }
       });
-      return usuarios.map(usuario => this.format(usuario));
+      return Promise.all(usuarios.map(usuario => this.format(usuario)));
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const where: Prisma.usuarioWhereInput = filters
@@ -57,7 +65,7 @@ export class UsuarioRepository {
           id: 'desc'
         }
       });
-      return usuarios.map(usuario => this.format(usuario));
+      return Promise.all(usuarios.map(usuario => this.format(usuario)));
     });
   }
 
@@ -96,41 +104,19 @@ export class UsuarioRepository {
   };
 
   async findByEmail(email: string): Promise<Usuario | null> {
-    const user = await prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        const usuario = await tx.usuario.findFirst({ where: { email }, include: this.include() });
-        return usuario ? this.format(usuario) : null;
-      }
-    );
-    return user;
+    const usuario = await prisma.usuario.findFirst({ where: { email }, include: this.include() });
+    return usuario ? await this.format(usuario) : null;
   }
 
   async findByEquipamentoId(id_equipamento: number): Promise<Usuario | null> {
-    const user = await prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        const equip = await tx.equipamento.findFirst({
-          where: { id: id_equipamento },
-          include: {
-            cliente: {
-              include: {
-                usuario_responsavel: {
-                  include: this.include(),
-                },
-              },
-            },
-          },
-        });
-        return equip?.cliente?.usuario_responsavel ? this.format(equip.cliente.usuario_responsavel) : null;
-      }
-    );
-    return user;
+    // Por enquanto, não retornamos responsável pois um cliente pode ter múltiplos responsáveis
+    // Esta funcionalidade será implementada posteriormente
+    return null;
   }
 
   async findById(id: number): Promise<Usuario | null> {
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const usuario = await tx.usuario.findUnique({ where: { id }, include: this.include() });
-      return usuario ? this.format(usuario) : null;
-    });
+    const usuario = await prisma.usuario.findUnique({ where: { id }, include: this.include() });
+    return usuario ? await this.format(usuario) : null;
   }
 
   async findProfileList(id: number, tx?: Prisma.TransactionClient): Promise<UsuarioPerfil[]> {
@@ -147,75 +133,42 @@ export class UsuarioRepository {
     }
   }
 
-  async create(data: Usuario & { id_perfil?: number }, tx?: Prisma.TransactionClient): Promise<Usuario> {
-    if (tx) {
-      data.senha = await bcrypt.hash(data.senha, 10);
-      const { id_perfil, ...rest } = data;
-      const newUser = await tx.usuario.create({
-        data: {
-          ...rest,
-        },
-        include: this.include()
-      });
-      if (data.id_perfil) {
-        await tx.usuario_perfil.create({ data: { id_perfil: data.id_perfil, id_usuario: newUser.id } });
-      }
-      return this.format(newUser);
-    }
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      data.senha = await bcrypt.hash(data.senha, 10);
-      const { id_perfil, ...rest } = data;
-      const newUser = await tx.usuario.create({
-        data: {
-          ...rest,
-        },
-        include: this.include()
-      });
-      // Se um perfil foi especificado, criar o vínculo
-      if (data.id_perfil) {
-        await tx.usuario_perfil.create({
-          data: {
-            id_perfil: data.id_perfil,
-            id_usuario: newUser.id,
-          },
-        });
-      }
-
-      return this.format(newUser);
+  async create(data: Partial<CreateUserDTO>, tx?: Prisma.TransactionClient): Promise<Usuario> {
+    const executor = tx || prisma;
+    const { nome, email, senha, username, id_perfil } = data;
+    const newUser = await executor.usuario.create({
+      data: {
+        nome: nome || '',
+        email: email || '',
+        senha: senha || '',
+        username: username || '',
+      },
     });
+    return await this.format(newUser);
   }
 
   async update(id: number, data: Partial<Usuario>, tx?: Prisma.TransactionClient): Promise<Usuario> {
     if (tx) {
       const usuario = await tx.usuario.update({ where: { id }, data, include: this.include() });
-      return this.format(usuario);
+      return await this.format(usuario);
     }
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const usuario = await tx.usuario.update({ where: { id }, data, include: this.include() });
-      return this.format(usuario);
-    });
+    const usuario = await prisma.usuario.update({ where: { id }, data, include: this.include() });
+    return await this.format(usuario);
   }
 
   async isResponsable(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
-    if (tx) {
-      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 2 } });
-      return usuario_perfil ? true : false;
-    }
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 2 } });
-      return usuario_perfil ? true : false;
-    });
+    const executor = tx || prisma;
+    return executor.usuario_perfil_cliente.findFirst({ where: { id_usuario, id_perfil: 2 } }).then(usuario_perfil_cliente => usuario_perfil_cliente ? true : false);
   }
 
   async isAdmin(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
-    if (tx) {
-      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 1 } });
-      return usuario_perfil ? true : false;
-    }
-    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const usuario_perfil = await tx.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 1 } });
-      return usuario_perfil ? true : false;
-    });
+    const executor = tx || prisma;
+    return executor.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 1 } }).then(usuario_perfil => usuario_perfil ? true : false);
+  }
+
+  async isManager(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
+   const executor = tx || prisma;
+   return executor.usuario_perfil_cliente.findFirst({ where: { id_usuario, id_perfil: 3 } }).then(usuario_perfil_cliente => usuario_perfil_cliente ? true : false);
   }
 
   async delete(id: number): Promise<void> {

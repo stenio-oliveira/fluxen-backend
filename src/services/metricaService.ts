@@ -1,6 +1,7 @@
 import { MetricasFilters } from '../controllers/metricaController';
 import { MetricaRepository } from '../repositories/metricaRepository';
 import { Metrica } from '../types/Metrica';
+import { hasEquipamentoPermission } from '../utils/equipamentoPermissionHelper';
 
 export class MetricaService {
   private metricaRepository = new MetricaRepository();
@@ -20,8 +21,17 @@ export class MetricaService {
     valor_minimo: number,
     valor_maximo: number,
     alarme_minimo: number | null = null,
-    alarme_maximo: number | null = null
+    alarme_maximo: number | null = null,
+    userId?: number
   ): Promise<Metrica | null> {
+    // Verificar permissão se userId foi fornecido
+    if (userId) {
+      const hasPermission = await hasEquipamentoPermission(userId, id_equipamento);
+      if (!hasPermission) {
+        throw new Error('Usuário não tem permissão para associar métricas a este equipamento');
+      }
+    }
+
     return this.metricaRepository.associateMetricToEquipamento(
       id_metrica,
       id_equipamento,
@@ -32,11 +42,27 @@ export class MetricaService {
     );
   }
 
-  async desassociateMetricToEquipamento(id_metrica: number, id_equipamento: number): Promise<Metrica[] | null> {
+  async desassociateMetricToEquipamento(id_metrica: number, id_equipamento: number, userId?: number): Promise<Metrica[] | null> {
+    // Verificar permissão se userId foi fornecido
+    if (userId) {
+      const hasPermission = await hasEquipamentoPermission(userId, id_equipamento);
+      if (!hasPermission) {
+        throw new Error('Usuário não tem permissão para desassociar métricas deste equipamento');
+      }
+    }
+
     return this.metricaRepository.desassociateMetricToEquipamento(id_metrica, id_equipamento);
   }
 
-  async getMetricaByEquipamentoId(id_equipamento: number): Promise<Metrica[]> {
+  async getMetricaByEquipamentoId(id_equipamento: number, userId?: number): Promise<Metrica[]> {
+    // Verificar permissão se userId foi fornecido
+    if (userId) {
+      const hasPermission = await hasEquipamentoPermission(userId, id_equipamento);
+      if (!hasPermission) {
+        throw new Error('Usuário não tem permissão para visualizar métricas deste equipamento');
+      }
+    }
+
     return this.metricaRepository.findByEquipamentoId(id_equipamento);
   }
 

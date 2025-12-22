@@ -5,6 +5,7 @@ export interface Usuario {
   senha: string;
   username: string;
   perfil_nome?: string;
+  is_gestor?: boolean; // Indica se o usuário é gestor de algum cliente
   // Campos de auditoria
   created_at?: Date | null;
   created_by?: number | null;
@@ -17,4 +18,17 @@ export interface Usuario {
   subscription_cancel_at_period_end?: boolean | null;
   plan_name?: string | null; // Nome do plano (ex: "basic", "premium")
   stripe_price_id?: string | null; // ID do preço no Stripe
+
+}
+
+export interface CreateUserDTO {
+  nome: string;
+  email: string;
+  senha: string;
+  username: string;
+  id_perfil: number;
+  relacionamentos?: {
+    id_cliente: number;
+    id_perfil: number; // 2 = responsável, 3 = gestor
+  }[];
 }

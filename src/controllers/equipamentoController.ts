@@ -44,9 +44,14 @@ export class EquipamentoController {
 
   async createEquipamento(req: Request, res: Response): Promise<void> {
     try {
-      const equipamento = await this.equipamentoService.createEquipamento(req.body);
+      const userId = req.user?.id ? Number(req.user.id) : undefined;
+      const equipamento = await this.equipamentoService.createEquipamento(req.body, userId);
       res.status(201).json(equipamento);
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message?.includes('permissão') || error.message?.includes('obrigatório')) {
+        res.status(403).json({ message: error.message });
+        return;
+      }
       logError('Failed to create equipment', error);
       res.status(500).json({ message: 'Erro ao criar equipamento' });
     }

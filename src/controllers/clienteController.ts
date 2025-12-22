@@ -71,5 +71,35 @@ export class ClienteController {
       res.status(500).json({ message: 'Erro ao deletar cliente' });
     }
   }
+
+  async getClientesByManager(req: Request, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id ? Number(req.user.id) : undefined;
+      console.log('getClientesByManager - userId:', userId);
+      console.log('getClientesByManager - req.user:', req.user);
+      
+      if (!userId) {
+        res.status(400).json({ message: 'User ID is required' });
+        return;
+      }
+
+      const filters: ClienteFilters = req.query ? req.query as any : {
+        columnFilters: {
+          id: null,
+          nome: null,
+          cnpj: null,
+        },
+        generalFilter: "",
+      };
+
+      console.log('getClientesByManager - filters:', filters);
+      const clientes = await this.clienteService.getClientesByManager(userId, filters);
+      console.log('getClientesByManager - clientes retornados:', clientes);
+      res.json(clientes);
+    } catch (error) {
+      logError('Failed to get clients by manager', error, { userId: req.user?.id });
+      res.status(500).json({ message: 'Erro ao buscar clientes do gestor' });
+    }
+  }
 }
 

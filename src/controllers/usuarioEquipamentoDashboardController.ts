@@ -26,7 +26,7 @@ export class UsuarioEquipamentoDashboardController {
    */
   async addEquipamentoToDashboard(req: Request, res: Response): Promise<void> {
     try {
-      const { userId, equipamentoId } = req.body;
+      const { userId, equipamentoId, id_metrica } = req.body;
 
       if (!userId || !equipamentoId) {
         res.status(400).json({ message: 'userId e equipamentoId são obrigatórios' });
@@ -35,7 +35,8 @@ export class UsuarioEquipamentoDashboardController {
 
       const result = await this.service.addEquipamentoToDashboard(
         Number(userId),
-        Number(equipamentoId)
+        Number(equipamentoId),
+        id_metrica ? Number(id_metrica) : null
       );
       res.status(201).json(result);
     } catch (error: any) {
@@ -47,16 +48,36 @@ export class UsuarioEquipamentoDashboardController {
   }
 
   /**
+   * DELETE /usuario-equipamento-dashboard/:id
+   * Remove um equipamento do dashboard do usuário por ID da associação
+   */
+  async removeEquipamentoFromDashboardById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      await this.service.removeEquipamentoFromDashboardById(Number(id));
+      res.status(204).send();
+    } catch (error: any) {
+      logError('Failed to remove equipment from dashboard by id', error, {
+        id: req.params.id
+      });
+      res.status(500).json({ message: error.message || 'Erro ao remover equipamento do dashboard' });
+    }
+  }
+
+  /**
    * DELETE /usuario-equipamento-dashboard/:userId/:equipamentoId
-   * Remove um equipamento do dashboard do usuário
+   * Remove um equipamento do dashboard do usuário (com métrica específica)
    */
   async removeEquipamentoFromDashboard(req: Request, res: Response): Promise<void> {
     try {
       const { userId, equipamentoId } = req.params;
+      const { id_metrica } = req.query;
 
       await this.service.removeEquipamentoFromDashboard(
         Number(userId),
-        Number(equipamentoId)
+        Number(equipamentoId),
+        id_metrica ? Number(id_metrica) : null
       );
       res.status(204).send();
     } catch (error: any) {

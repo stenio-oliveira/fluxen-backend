@@ -7,7 +7,6 @@ export interface ClienteFilters {
     id: string;
     nome: string;
     cnpj: string;
-    responsavel_nome: string;
   };
   generalFilter: string;
 }
@@ -22,69 +21,93 @@ export class ClienteRepository {
     tx?: Prisma.TransactionClient
   ): Promise<Cliente[] | void[]> => {
     const { generalFilter, columnFilters } = filters;
+    const executor = tx || prisma;
+    const clients = await executor.cliente.findMany({
+      where: {
+        usuario_perfil_cliente: {
+          some: {
+            id_usuario: userId,
+            id_perfil: 2,
+          }
+        }
+      }
+    });
+    //acha os clientes em que o usuario é responsável
+    const clientIds = clients.map(client => client.id);
+    //filtra os clientes pelos filtros
     const where: Prisma.clienteWhereInput = {
       AND: [
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
-        { 
-          id_responsavel: userId,
+        {
+          id: {
+            in: clientIds,
+          },
         }
       ],
     };
+    return executor.cliente
+      .findMany({
+        include: this.include(),
+        where,
+        orderBy: {
+          id: 'desc'
+        }
+      })
+      .then(this.formatArray);
 
-    if (tx) {
-      return tx.cliente
-        .findMany({
-          include: this.include(),
-          where,
-          orderBy: {
-            id: 'desc'
-          }
-        })
-        .then(this.formatArray);
-    }
 
-    return prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        return tx.cliente
-          .findMany({
-            include: this.include(),
-            where,
-            orderBy: {
-              id: 'desc'
-            }
-          })
-          .then(this.formatArray);
-      }
-    );
+
   };
-  
 
-  findByAdministratorUser = async (userId : number, filters: ClienteFilters, tx?: Prisma.TransactionClient) => { 
+  findByManagerUser = async (
+    userId: number,
+    filters: ClienteFilters,
+    tx?: Prisma.TransactionClient
+  ): Promise<Cliente[] | void[]> => {
+    console.log("findByManagerUser clientes")
     const { generalFilter, columnFilters } = filters;
     const executor = tx || prisma;
+    const clients = await executor.cliente.findMany({
+      where: {
+        usuario_perfil_cliente: {
+          some: {
+            id_usuario: userId,
+            id_perfil: 3, // gestor
+          }
+        }
+      }
+    });
+    //acha os clientes em que o usuario é gestor
+    const clientIds = clients.map(client => client.id);
+    //filtra os clientes pelos filtros
     const where: Prisma.clienteWhereInput = {
       AND: [
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
-        { 
-          id_administrador: userId,
+        {
+          id: {
+            in: clientIds,
+          },
         }
       ],
     };
-    return executor.cliente.findMany({
-      include: this.include(),
-      where,
-      orderBy: {
-        id: 'desc'
-      }
-    }).then(this.formatArray);
-  }
+    return executor.cliente
+      .findMany({
+        include: this.include(),
+        where,
+        orderBy: {
+          id: 'desc'
+        }
+      })
+      .then(this.formatArray);
+  };
 
   findAll = async (
     filters: ClienteFilters,
     tx?: Prisma.TransactionClient
   ): Promise<Cliente[] | void[]> => {
+    const executor = tx || prisma;
     const { generalFilter, columnFilters } = filters;
     const where: Prisma.clienteWhereInput = {
       AND: [
@@ -92,37 +115,21 @@ export class ClienteRepository {
         this.buildColumnFilters(columnFilters),
       ],
     };
+    return executor.cliente
+      .findMany({
+        include: this.include(),
+        where,
+        orderBy: {
+          id: 'desc'
+        }
+      })
+      .then(this.formatArray);
 
-    if (tx) {
-      return tx.cliente
-        .findMany({
-          include: this.include(),
-          where,
-          orderBy: {
-            id: 'desc'
-          }
-        })
-        .then(this.formatArray);
-    }
-
-    return prisma.$transaction(
-      async (tx: Prisma.TransactionClient) => {
-        return tx.cliente
-          .findMany({
-            include: this.include(),
-            where,
-            orderBy: {
-              id: 'desc'
-            }
-          })
-          .then(this.formatArray);
-      }
-    );
   };
 
   include = (): Prisma.clienteInclude => {
     return {
-      usuario_responsavel: true
+
     };
   };
 
@@ -141,18 +148,16 @@ export class ClienteRepository {
   };
 
   create = async (data: Partial<Cliente>, tx?: Prisma.TransactionClient): Promise<Cliente | null> => {
-    const { nome, cnpj, id_responsavel } = data;
+    const { nome, cnpj } = data;
     if (!nome || nome === "") {
       throw new Error(`Erro ao criar cliente: nome é obrigatório`);
     }
-
     if (tx) {
       return tx.cliente
         .create({
           data: {
             nome: nome,
             cnpj: cnpj || null,
-            id_responsavel: id_responsavel || null,
           },
           include: this.include(),
         })
@@ -164,8 +169,7 @@ export class ClienteRepository {
         .create({
           data: {
             nome: nome,
-            cnpj: cnpj || null,
-            id_responsavel: id_responsavel || null,
+            cnpj: cnpj || null
           },
           include: this.include(),
         })
@@ -209,15 +213,6 @@ export class ClienteRepository {
             contains: generalFilter,
           },
         },
-        {
-          usuario_responsavel: {
-            OR: [
-              { nome: { contains: generalFilter } },
-              { email: { contains: generalFilter } },
-              { username: { contains: generalFilter } }
-            ],
-          },
-        },
       ],
     };
   };
@@ -237,22 +232,12 @@ export class ClienteRepository {
     if (columnFilters?.cnpj && columnFilters?.cnpj !== "") {
       filters.cnpj = { contains: columnFilters.cnpj };
     }
-    if (columnFilters?.responsavel_nome && columnFilters?.responsavel_nome !== "") {
-      filters.usuario_responsavel = {
-        OR: [
-          { nome: { contains: columnFilters.responsavel_nome } },
-          { email: { contains: columnFilters.responsavel_nome } },
-          { username: { contains: columnFilters.responsavel_nome } }
-        ],
-      };
-    }
     return filters;
   };
 
   format = (cliente: Cliente | any): Cliente => {
     return {
       ...cliente,
-      responsavel_nome: cliente.usuario_responsavel?.nome,
     };
   };
 
