@@ -25,6 +25,7 @@ export interface ChartData {
     total?: number;
     currentValue?: number;
     maxValue?: number;
+    minValue?: number;
   };
 }
 

@@ -3,7 +3,7 @@ import { ClienteFilters } from '../repositories/clienteRepository';
 import { ClienteRepository } from '../repositories/clienteRepository';
 import { UsuarioRepository } from '../repositories/usuarioRepository';
 import { Cliente, CreateClientDTO } from '../types/Cliente';
-import { prisma } from '..';
+import { prisma } from '../database';
 
 export class ClienteService {
   private clienteRepository = new ClienteRepository();

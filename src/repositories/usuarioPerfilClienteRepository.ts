@@ -1,4 +1,4 @@
-import { prisma } from '..';
+import { prisma } from '../database';
 import { Prisma } from '@prisma/client';
 
 export interface UsuarioPerfilCliente {

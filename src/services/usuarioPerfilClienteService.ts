@@ -1,5 +1,6 @@
 import { UsuarioPerfilClienteRepository } from '../repositories/usuarioPerfilClienteRepository';
-import { prisma } from '..';
+import { prisma } from '../database';
+import { Prisma } from '@prisma/client';
 
 export interface UpdateUsuarioPerfilClienteDTO {
   id_usuario: number;
@@ -27,7 +28,7 @@ export class UsuarioPerfilClienteService {
   async updateRelacionamentos(data: UpdateUsuarioPerfilClienteDTO) {
     const { id_usuario, relacionamentos } = data;
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Deletar todos os relacionamentos existentes do usuário (exceto admin)
       // Primeiro, verificar se o usuário é admin
       const isAdmin = await tx.usuario_perfil.findFirst({
@@ -80,7 +81,7 @@ export class UsuarioPerfilClienteService {
   async updateRelacionamentosByCliente(data: UpdateClienteRelacionamentosDTO) {
     const { id_cliente, relacionamentos } = data;
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Deletar todos os relacionamentos existentes do cliente
       await tx.usuario_perfil_cliente.deleteMany({
         where: { id_cliente },

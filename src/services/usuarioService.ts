@@ -1,8 +1,9 @@
-import { prisma } from '..';
+import { prisma } from '../database';
 import { ClientesFilters, UserFilters } from '../controllers/usuarioController';
 import { UsuarioRepository } from '../repositories/usuarioRepository';
 import { CreateUserDTO, Usuario } from '../types/Usuario';
 import bcrypt from 'bcrypt';
+import { Prisma } from '@prisma/client';
 
 export class UsuarioService {
   private usuarioRepository = new UsuarioRepository();
@@ -22,7 +23,7 @@ export class UsuarioService {
   async createUsuario(data: CreateUserDTO): Promise<Usuario> {
     const { nome, email, senha, username, id_perfil, relacionamentos = [] } = data;
 
-    return prisma.$transaction(async (tx) => {
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Hash da senha antes de criar o usuário
       const encryptedSenha = await bcrypt.hash(senha, 10);
       const newUser = await this.usuarioRepository.create({ nome, email, senha: encryptedSenha, username }, tx);
