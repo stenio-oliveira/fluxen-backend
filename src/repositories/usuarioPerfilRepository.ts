@@ -1,4 +1,4 @@
-import { prisma } from '../index';
+import { prisma } from '../database';
 import { Perfil } from '../types/Perfil';
 import { UsuarioPerfil } from '../types/UsuarioPerfil';
 import { Prisma } from '@prisma/client';

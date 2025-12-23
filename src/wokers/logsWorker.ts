@@ -1,10 +1,12 @@
 import { rabbitMQService } from '../services/rabbitmqService';
 import { EquipamentoLogService } from '../services/equipamentoLogService';
+import { ReportService } from '../services/reportService';
+import { emailService } from '../services/emailService';
 import { logError, logInfo } from '../utils/logger';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../database';
 
 const equipamentoLogService = new EquipamentoLogService();
-const prisma = new PrismaClient();
+const reportService = new ReportService();
 
 async function processLogs(data: any): Promise<void> {
     try {
@@ -22,13 +24,90 @@ async function processLogs(data: any): Promise<void> {
     }
 }
 
+async function processReportRequest(data: any): Promise<void> {
+    try {
+        const { id_equipamento, userId, startDate, endDate, format, email } = data;
+        
+        logInfo('Processing report request from queue', {
+            id_equipamento,
+            userId,
+            format,
+            email,
+            startDate,
+            endDate
+        });
+
+        // Validar email
+        if (!email) {
+            throw new Error('Email is required for report delivery');
+        }
+
+        // Buscar equipamento para obter nome
+        const equipamento = await prisma.equipamento.findUnique({
+            where: { id: id_equipamento },
+            select: { nome: true }
+        });
+
+        if (!equipamento) {
+            throw new Error(`Equipamento ${id_equipamento} not found`);
+        }
+
+        // Converter datas
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Gerar relatório
+        let fileBuffer: Buffer;
+        if (format === 'xlsx') {
+            fileBuffer = await reportService.generateXLSXReport(id_equipamento, start, end);
+        } else if (format === 'pdf') {
+            fileBuffer = await reportService.generatePDFReport(id_equipamento, start, end);
+        } else {
+            throw new Error(`Unsupported format: ${format}`);
+        }
+
+        // Enviar por email
+        await emailService.sendReportEmail(
+            email,
+            equipamento.nome,
+            start,
+            end,
+            format,
+            fileBuffer
+        );
+
+        logInfo('Report processed and sent successfully', {
+            id_equipamento,
+            email,
+            format,
+            fileSize: fileBuffer.length
+        });
+    } catch (error) {
+        logError('Failed to process report request from queue', error);
+        throw error; // Isso fará o retry automático
+    }
+}
+
 async function startWorker() {
     try {
+        // Inicializar email service
+        if (emailService.isConfigured()) {
+            await emailService.initialize();
+            logInfo('Email service initialized successfully');
+        } else {
+            logError('Email service not configured. Reports will not be sent.', new Error('Email configuration missing'));
+        }
+
         // Conectar ao RabbitMQ
         await rabbitMQService.connect();
-        // Iniciar consumo de mensagens passando a função para processar as mensagens
+        
+        // Iniciar consumo de logs
         await rabbitMQService.consumeLogs(processLogs);
-        logInfo('Logs worker started successfully');
+        
+        // Iniciar consumo de requisições de relatórios
+        await rabbitMQService.consumeReportRequests(processReportRequest);
+        
+        logInfo('Logs worker started successfully (logs + reports)');
     } catch (error) {
         logError('Failed to start logs worker', error);
         process.exit(1);

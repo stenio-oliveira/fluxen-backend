@@ -1,5 +1,5 @@
 import { UsuarioRepository } from '../repositories/usuarioRepository';
-import { prisma } from '../index';
+import { prisma } from '../database';
 
 /**
  * Verifica se um usuário tem permissão para acessar um equipamento específico

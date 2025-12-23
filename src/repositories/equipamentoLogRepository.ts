@@ -106,6 +106,31 @@ export class EquipamentoLogRepository {
 
     return { groups, total };
   }
+
+  /**
+   * Busca todos os logs em um intervalo de datas (sem paginação - para relatórios)
+   */
+  async findByDateRange(
+    id_equipamento: number,
+    startDate: Date,
+    endDate: Date,
+    transaction?: Prisma.TransactionClient
+  ): Promise<EquipamentoLogGrupo[]> {
+    const executor = transaction ?? prisma;
+
+    return executor.equipamento_log_grupo.findMany({
+      where: {
+        id_equipamento,
+        timestamp: {
+          gte: startDate,
+          lte: endDate
+        }
+      },
+      orderBy: {
+        timestamp: 'asc'
+      }
+    });
+  }
     
 }
 

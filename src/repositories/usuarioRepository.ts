@@ -1,4 +1,4 @@
-import { prisma } from '..';
+import { prisma } from '../database';
 import { ClientesFilters, UserFilters } from '../controllers/usuarioController';
 import { CreateUserDTO, Usuario } from '../types/Usuario';
 import { Prisma } from '@prisma/client';
@@ -158,17 +158,17 @@ export class UsuarioRepository {
 
   async isResponsable(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
     const executor = tx || prisma;
-    return executor.usuario_perfil_cliente.findFirst({ where: { id_usuario, id_perfil: 2 } }).then(usuario_perfil_cliente => usuario_perfil_cliente ? true : false);
+    return executor.usuario_perfil_cliente.findFirst({ where: { id_usuario, id_perfil: 2 } }).then((usuario_perfil_cliente: any)  => usuario_perfil_cliente ? true : false);
   }
 
   async isAdmin(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
     const executor = tx || prisma;
-    return executor.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 1 } }).then(usuario_perfil => usuario_perfil ? true : false);
+    return executor.usuario_perfil.findFirst({ where: { id_usuario, id_perfil: 1 } }).then((usuario_perfil: any) => usuario_perfil ? true : false);
   }
 
   async isManager(id_usuario: number, tx?: Prisma.TransactionClient): Promise<boolean> {
    const executor = tx || prisma;
-   return executor.usuario_perfil_cliente.findFirst({ where: { id_usuario, id_perfil: 3 } }).then(usuario_perfil_cliente => usuario_perfil_cliente ? true : false);
+   return executor.usuario_perfil_cliente.findFirst({ where: { id_usuario, id_perfil: 3 } }).then((usuario_perfil_cliente: any) => usuario_perfil_cliente ? true : false);
   }
 
   async delete(id: number): Promise<void> {

@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client';
-import { prisma } from '../index';
+import { prisma } from '../database';
 import { Equipamento } from '../types/Equipamento';
 import { EquipmentFilters } from '../controllers/equipamentoController';
 

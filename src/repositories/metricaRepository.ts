@@ -1,5 +1,5 @@
 import { MetricasFilters } from '../controllers/metricaController';
-import { prisma } from '../index';
+import { prisma } from '../database';
 import { Metrica } from '../types/Metrica';
 import { Prisma } from '@prisma/client';
 

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { prisma } from '../index';
+import { prisma } from '../database';
 import { UsuarioRepository } from '../repositories/usuarioRepository';
 import { logError, logWarn, logInfo } from '../utils/logger';
 

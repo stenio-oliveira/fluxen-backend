@@ -1,5 +1,5 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from './database';
 import authRouter from './routers/authRouter';
 import clienteRouter from './routers/clienteRouter';
 import equipamentoLogRouter from './routers/equipamentoLogRouter';
@@ -13,6 +13,7 @@ import usuarioPerfilClienteRouter from './routers/usuarioPerfilClienteRouter';
 import usuarioEquipamentoDashboardRouter from './routers/usuarioEquipamentoDashboardRouter';
 import chartRouter from './routers/chartRouter';
 import notificacaoRouter from './routers/notificacaoRouter';
+import reportRouter from './routers/reportRouter';
 import cors from "cors";
 import morgan from "morgan";
 import { logger, logError, logInfo, logWarn } from './utils/logger';
@@ -29,8 +30,6 @@ app.use(
 );
 
 app.use(morgan('dev'));
-
-export const prisma = new PrismaClient();
 
 app.use(express.json());
 
@@ -61,6 +60,7 @@ app.use('/api', usuarioPerfilClienteRouter);
 app.use('/api', usuarioEquipamentoDashboardRouter);
 app.use('/api', chartRouter);
 app.use('/api', notificacaoRouter);
+app.use('/api', reportRouter);
 
 // Start the server
 const PORT = process.env.PORT || 3000;

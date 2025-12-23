@@ -161,23 +161,9 @@ export class EquipamentoLogService {
       return 'none';
     }
 
-    console.log('[checkValueLimits]', {
-      metricId,
-      value,
-      equipamentoMetrica: {
-        id: equipamentoMetrica.id,
-        id_metrica: equipamentoMetrica.id_metrica,
-        alarme_minimo: equipamentoMetrica.alarme_minimo,
-        alarme_maximo: equipamentoMetrica.alarme_maximo,
-        valor_minimo: equipamentoMetrica.valor_minimo,
-        valor_maximo: equipamentoMetrica.valor_maximo
-      }
-    });
-
     // Se alarme_minimo está configurado, verificar se o valor está abaixo
     if (equipamentoMetrica.alarme_minimo !== null && equipamentoMetrica.alarme_minimo !== undefined) {
       if (value <= equipamentoMetrica.alarme_minimo) {
-        console.log(`[ALERTA MIN] metricId: ${metricId}, valor: ${value}, alarme_minimo: ${equipamentoMetrica.alarme_minimo}`);
         return 'min';
       }
     }
@@ -185,7 +171,7 @@ export class EquipamentoLogService {
     // Se alarme_maximo está configurado, verificar se o valor está acima
     if (equipamentoMetrica.alarme_maximo !== null && equipamentoMetrica.alarme_maximo !== undefined) {
       if (value >= equipamentoMetrica.alarme_maximo) {
-        console.log(`[ALERTA MAX] metricId: ${metricId}, valor: ${value}, alarme_maximo: ${equipamentoMetrica.alarme_maximo}`);
+       
         return 'max';
       }
     }
@@ -232,16 +218,34 @@ export class EquipamentoLogService {
 
   async getLogsTableData(
     id_equipamento: number,
-    paginationOptions: PaginationOptions = {}
+    paginationOptions: PaginationOptions = {},
+    startDate?: Date,
+    endDate?: Date
   ): Promise<any> {
-    const page = Math.max(paginationOptions.page ?? 1, 1);
-    const pageSize = Math.max(Math.min(paginationOptions.pageSize ?? 50, 500), 1);
-
     const metrics = await this.equipamentoMetricaRepository.findByEquipamentoId(id_equipamento);
-    const { groups, total } = await this.equipamentoLogRepository.findGroupedByTimestamp(
-      id_equipamento,
-      { page, pageSize }
-    );
+
+    let groups: any[];
+    let total: number;
+
+    // Se datas forem fornecidas, usar findByDateRange (sem paginação)
+    if (startDate && endDate) {
+      groups = await this.equipamentoLogRepository.findByDateRange(
+        id_equipamento,
+        startDate,
+        endDate
+      );
+      total = groups.length;
+    } else {
+    // Caso contrário, usar paginação normal
+      const page = Math.max(paginationOptions.page ?? 1, 1);
+      const pageSize = Math.max(Math.min(paginationOptions.pageSize ?? 50, 500), 1);
+      const result = await this.equipamentoLogRepository.findGroupedByTimestamp(
+        id_equipamento,
+        { page, pageSize }
+      );
+      groups = result.groups;
+      total = result.total;
+    }
 
     // Create timestamp column
     const columnsArray = [
@@ -268,17 +272,25 @@ export class EquipamentoLogService {
     const rows = this.buildRowsFromGroups(groups, metrics);
 
     let situationRows = rows;
-    if (page !== 1) {
-      const { groups: recentGroups } = await this.equipamentoLogRepository.findGroupedByTimestamp(
-        id_equipamento,
-        { page: 1, pageSize: 5 }
-      );
-      situationRows = this.buildRowsFromGroups(recentGroups, metrics);
+    // Só buscar situation rows se não estiver usando filtro de data e não estiver na primeira página
+    if (!startDate && !endDate) {
+      const page = Math.max(paginationOptions.page ?? 1, 1);
+      if (page !== 1) {
+        const { groups: recentGroups } = await this.equipamentoLogRepository.findGroupedByTimestamp(
+          id_equipamento,
+          { page: 1, pageSize: 5 }
+        );
+        situationRows = this.buildRowsFromGroups(recentGroups, metrics);
+      }
     }
 
     logInfo('Logs table data', {
       rowsLength: rows.length,
+      hasDateFilter: !!(startDate && endDate),
     })
+
+    const page = Math.max(paginationOptions.page ?? 1, 1);
+    const pageSize = Math.max(Math.min(paginationOptions.pageSize ?? 50, 500), 1);
 
     return { 
       columns: columnsArray,

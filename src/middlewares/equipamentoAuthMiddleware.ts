@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../index';
+import { prisma } from '../database';
 import { logError, logWarn } from '../utils/logger';
 
 // Extend Request interface to include equipamento

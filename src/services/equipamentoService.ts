@@ -3,7 +3,7 @@ import { EquipamentoRepository } from '../repositories/equipamentoRepository';
 import { UsuarioRepository } from '../repositories/usuarioRepository';
 import { Equipamento } from '../types/Equipamento';
 import { Usuario } from '../types/Usuario';
-import { prisma } from '../index';
+import { prisma } from '../database';
 
 export class EquipamentoService {
   private equipamentoRepository = new EquipamentoRepository();
