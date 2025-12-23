@@ -9,6 +9,7 @@ const secret = process.env.JWT_SECRET || 'default_secret';
 
 export class AuthController {
   async register(req: Request, res: Response) {
+    console.log('register', req.body);
     const { username, senha, nome, email } = req.body;
 
     if (!username || !senha || !nome || !email) {
@@ -52,6 +53,7 @@ export class AuthController {
   }
 
   async login(req: Request, res: Response) {
+    console.log('login', req.body);
     const { email, password } = req.body;
     const userRepository = new UsuarioRepository();
 
