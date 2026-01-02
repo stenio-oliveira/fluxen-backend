@@ -224,6 +224,7 @@ export class EquipamentoLogService {
       let parsedLogs: any[] = [];
       if (group.logs) {
         try {
+          console.log("group: ", group)
           parsedLogs = JSON.parse(group.logs);
           // Garantir que os timestamps dos logs estejam no fuso horário brasileiro
         } catch (error) {
@@ -320,8 +321,6 @@ export class EquipamentoLogService {
       rowsLength: rows.length,
       hasDateFilter: !!(startDate && endDate),
     })
-    const debuggingRows = rows.slice(0, 5);
-    console.log({ debuggingRows });
     const page = Math.max(paginationOptions.page ?? 1, 1);
     const pageSize = Math.max(Math.min(paginationOptions.pageSize ?? 50, 500), 1);
 
