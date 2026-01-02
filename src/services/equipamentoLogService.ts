@@ -21,6 +21,56 @@ export class EquipamentoLogService {
     this.notificacaoService = new NotificacaoService();
   }
 
+  /**
+   * Arredonda um valor para 2 casas decimais
+   */
+  private roundToTwoDecimals(value: number | null | undefined): number | undefined {
+    if (value === null || value === undefined) {
+      return undefined;
+    }
+    return Math.round(Number(value) * 100) / 100;
+  }
+
+  /**
+   * Gera ou retorna o valor convertido arredondado
+   * Se valor_convertido já foi fornecido, apenas arredonda
+   * Caso contrário, calcula usando regra de 3
+   */
+  private getConvertedValue(
+    valor: number,
+    valor_convertido: number | null | undefined,
+    valor_minimo: number,
+    valor_maximo: number
+  ): number {
+    const range_original_min = 0;
+    const range_original_max = 4095;
+
+    if (valor_convertido === undefined || valor_convertido === null) {
+      // Se valor_convertido não foi fornecido, calcular usando regra de 3
+      const calculatedValue =
+        ((Number(valor) - range_original_min) * (valor_maximo - valor_minimo)) /
+        (range_original_max - range_original_min) +
+        valor_minimo;
+      return this.roundToTwoDecimals(calculatedValue)!;
+    } else {
+      // Se já foi fornecido, apenas arredondar
+      return this.roundToTwoDecimals(valor_convertido)!;
+    }
+  }
+
+  /**
+   * Processa logs parseados do JSON e garante que os timestamps estejam no fuso horário brasileiro
+   */
+  private processParsedLogs(logs: any[]): any[] {
+    return logs.map((log: any) => {
+      if (log.timestamp) {
+        // Converter timestamp para fuso horário brasileiro
+        log.timestamp = toBrazilianTimezone(new Date(log.timestamp));
+      }
+      return log;
+    });
+  }
+
   async sendLogsToRabbitMQ(data: CreateEquipamentoLogsDTO): Promise<boolean> {
     try {
       // Verificar se RabbitMQ está conectado
@@ -72,53 +122,39 @@ export class EquipamentoLogService {
           equipamentoMetrica
         );
       }
-      const timestamp = toBrazilianTimezone(new Date());
+
       for (const log of data.logs) {
         const equipamentoMetrica = metricaToEquipamentoMetrica.get(
           log.id_metrica || 0
         );
         if (equipamentoMetrica) {
-          const range_original_min = 0;
-          const range_original_max = 4095;
           const { valor } = log;
           const { valor_minimo, valor_maximo } = equipamentoMetrica;
-          // Verificar se valor_convertido já foi fornecido
-          if (log.valor_convertido === undefined || log.valor_convertido === null) {
-          // Se valor_convertido não foi fornecido, calcular usando regra de 3
-            const calculatedValue =
-              ((Number(valor) - range_original_min) * (valor_maximo - valor_minimo)) /
-              (range_original_max - range_original_min) +
-              valor_minimo;
-            // Arredondar para 2 casas decimais
-            log.valor_convertido = Math.round(calculatedValue * 100) / 100;
-          } else {
-            // Se já foi fornecido, garantir que está arredondado para 2 casas decimais
-            log.valor_convertido = Math.round(Number(log.valor_convertido) * 100) / 100;
-          }
-
+          // Gerar ou atribuir o valor convertido
+          log.valor_convertido = this.getConvertedValue(
+            valor,
+            log.valor_convertido,
+            valor_minimo,
+            valor_maximo
+          );
           log.id_equipamento_metrica = equipamentoMetrica.id;
-
           // Sempre garantir que o timestamp esteja no fuso horário brasileiro
-          log.timestamp = timestamp;
-          console.log({timestamp});
-
+          log.timestamp = toBrazilianTimezone(new Date());
           // Criar notificações se houver alarme (fora da transação para não bloquear)
-          if (log.valor_convertido !== null && log.valor_convertido !== undefined) {
-            // Processar notificações de forma assíncrona após a transação
-            const valorConvertido = log.valor_convertido;
-            const idMetrica = log.id_metrica || 0;
-            const logTimestamp = log.timestamp || timestamp;
-            setImmediate(() => {
-              this.notificacaoService.createNotificationsForLog(
-                equipamentoId,
-                { id_metrica: idMetrica, valor_convertido: valorConvertido },
-                equipamentoMetrica,
-                logTimestamp
-              ).catch(error => {
-                logError('Failed to create notifications for log', error);
-              });
+          // valor_convertido sempre existirá após o processamento acima
+          const valorConvertido = log.valor_convertido!;
+          const idMetrica = log.id_metrica || 0;
+          const logTimestamp = log.timestamp;
+          setImmediate(() => {
+            this.notificacaoService.createNotificationsForLog(
+              equipamentoId,
+              { id_metrica: idMetrica, valor_convertido: valorConvertido },
+              equipamentoMetrica,
+              logTimestamp
+            ).catch(error => {
+              logError('Failed to create notifications for log', error);
             });
-          }
+          });
         }
       }
       newGroup.logs = JSON.stringify(data.logs);
@@ -183,15 +219,13 @@ export class EquipamentoLogService {
     return groups.map((group: any) => {
       const row: any = {
         id: group.id,
-        timestamp: group.timestamp
+        timestamp: toBrazilianTimezone(new Date(group.timestamp))
       };
-
       let parsedLogs: any[] = [];
       if (group.logs) {
         try {
-          parsedLogs = typeof group.logs === 'string'
-            ? JSON.parse(group.logs)
-            : group.logs;
+          parsedLogs = JSON.parse(group.logs);
+          // Garantir que os timestamps dos logs estejam no fuso horário brasileiro
         } catch (error) {
           console.error('Error parsing logs JSON:', error);
           parsedLogs = [];
@@ -199,13 +233,10 @@ export class EquipamentoLogService {
       }
 
       parsedLogs.forEach((log: any) => {
-        const valorConvertido = log.valor_convertido !== null && log.valor_convertido !== undefined
-          ? Math.round(Number(log.valor_convertido) * 100) / 100
-          : null;
-
+        const valorConvertido = this.roundToTwoDecimals(log.valor_convertido);
         row[`metrica_${log.id_metrica}`] = valorConvertido;
-
-        if (valorConvertido !== null) {
+        // Verificar apenas se valorConvertido existe (para compatibilidade com logs antigos)
+        if (valorConvertido !== undefined) {
           const alert = this.checkValueLimits(valorConvertido, log.id_metrica, metrics);
           row[`metrica_${log.id_metrica}_alert`] = alert;
         }
@@ -287,7 +318,8 @@ export class EquipamentoLogService {
       rowsLength: rows.length,
       hasDateFilter: !!(startDate && endDate),
     })
-
+    const debuggingRows = rows.slice(0, 5);
+    console.log({ debuggingRows });
     const page = Math.max(paginationOptions.page ?? 1, 1);
     const pageSize = Math.max(Math.min(paginationOptions.pageSize ?? 50, 500), 1);
 
