@@ -224,7 +224,6 @@ export class EquipamentoLogService {
       let parsedLogs: any[] = [];
       if (group.logs) {
         try {
-          console.log("group: ", group)
           parsedLogs = JSON.parse(group.logs);
           // Garantir que os timestamps dos logs estejam no fuso horário brasileiro
         } catch (error) {

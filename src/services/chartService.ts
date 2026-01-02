@@ -1,5 +1,6 @@
 import { EquipamentoLogRepository } from "../repositories/equipamentoLogRepository";
 import { EquipamentoMetricaRepository } from "../repositories/equipamentoMetricaRepository";
+import { formatISOString, parseTimestampAsLocal, toBrazilianTimezone } from "../utils/dateUtils";
 import { logError } from "../utils/logger";
 
 export type TimeRange = '5min' | '15min' | '30min' | '1h' | '6h' | '24h' | '7d';
@@ -39,8 +40,8 @@ export class ChartService {
   }
 
   private calculateTimeRange(timeRange: TimeRange): { startDate: Date; endDate: Date } {
-    const endDate = new Date();
-    const startDate = new Date();
+    const endDate = toBrazilianTimezone(new Date());
+    const startDate = toBrazilianTimezone(new Date());
 
     switch (timeRange) {
       case '5min':
@@ -82,6 +83,7 @@ export class ChartService {
       second: '2-digit'
     });
   }
+  
 
   private extractMetricValueFromGroup(group: any, id_metrica: number): number | null {
     if (!group.logs) return null;
@@ -122,7 +124,8 @@ export class ChartService {
 
       // Calcular intervalo de tempo
       const { startDate, endDate } = this.calculateTimeRange(timeRange);
-
+      console.log("startDate: ", startDate)
+      console.log("endDate: ", endDate)
       // Buscar grupos de logs no intervalo
       const { groups } = await this.equipamentoLogRepository.findGroupedByTimestampWithTimeRange(
         id_equipamento,
@@ -138,7 +141,8 @@ export class ChartService {
       groups.forEach((group) => {
         const value = this.extractMetricValueFromGroup(group, id_metrica);
         if (value !== null) {
-          labels.push(this.formatTimestamp(group.timestamp));
+          labels.push(formatISOString(group.timestamp) ?? '');
+          console.log("labels: ", labels)
           data.push(value);
         }
       });
@@ -275,7 +279,7 @@ export class ChartService {
       groups.forEach((group) => {
         const value = this.extractMetricValueFromGroup(group, id_metrica);
         if (value !== null) {
-          labels.push(this.formatTimestamp(group.timestamp));
+          labels.push(formatISOString(group.timestamp) ?? '');
           data.push(value);
         }
       });
