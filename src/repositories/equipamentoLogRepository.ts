@@ -1,5 +1,6 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { EquipamentoLogGrupo } from '../types/EquipamentoLogGrupo';
+import { toBrazilianTimezone } from '../utils/dateUtils';
 
 // Criar instância própria do Prisma para evitar dependência circular
 const prisma = new PrismaClient();
@@ -27,11 +28,12 @@ export class EquipamentoLogRepository {
   }
 
   async createGroup( id_equipamento: number, transaction? : Prisma.TransactionClient,): Promise<EquipamentoLogGrupo> {
+    const timestamp = toBrazilianTimezone(new Date());
     if(transaction){ 
-      return transaction.equipamento_log_grupo.create({ data: { timestamp: new Date(), id_equipamento } });
+      return transaction.equipamento_log_grupo.create({ data: { timestamp, id_equipamento } });
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.equipamento_log_grupo.create({ data: { timestamp: new Date(), id_equipamento } });
+      return tx.equipamento_log_grupo.create({ data: { timestamp, id_equipamento } });
     });
   }
 

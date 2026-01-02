@@ -6,6 +6,7 @@ import { CreateEquipamentoLogsDTO } from "../dto/HttpRequestDTOS/CreateEquipamen
 import { rabbitMQService } from "./rabbitmqService";
 import { logError, logInfo } from "../utils/logger";
 import { NotificacaoService } from "./notificacaoService";
+import { toBrazilianTimezone } from "../utils/dateUtils";
 
 const prisma = new PrismaClient();
 
@@ -71,7 +72,7 @@ export class EquipamentoLogService {
           equipamentoMetrica
         );
       }
-      const timestamp = new Date();
+      const timestamp = toBrazilianTimezone(new Date());
       for (const log of data.logs) {
         const equipamentoMetrica = metricaToEquipamentoMetrica.get(
           log.id_metrica || 0
@@ -97,10 +98,9 @@ export class EquipamentoLogService {
 
           log.id_equipamento_metrica = equipamentoMetrica.id;
 
-          // Se não foi fornecido timestamp, usar o atual
-          if (!log.timestamp) {
-            log.timestamp = timestamp;
-          }
+          // Sempre garantir que o timestamp esteja no fuso horário brasileiro
+          log.timestamp = timestamp;
+          console.log({timestamp});
 
           // Criar notificações se houver alarme (fora da transação para não bloquear)
           if (log.valor_convertido !== null && log.valor_convertido !== undefined) {
@@ -122,7 +122,6 @@ export class EquipamentoLogService {
         }
       }
       newGroup.logs = JSON.stringify(data.logs);
-      console.log({newGroup});
      const updatedGroup = await this.equipamentoLogRepository.updateGroup(newGroup.id, newGroup, tx);
      console.log({updatedGroup});
 
