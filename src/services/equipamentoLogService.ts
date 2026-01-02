@@ -219,7 +219,7 @@ export class EquipamentoLogService {
     return groups.map((group: any) => {
       const row: any = {
         id: group.id,
-        timestamp: toBrazilianTimezone(new Date(group.timestamp))
+        timestamp: group.timestamp
       };
       let parsedLogs: any[] = [];
       if (group.logs) {
@@ -273,7 +273,9 @@ export class EquipamentoLogService {
         id_equipamento,
         { page, pageSize }
       );
+      
       groups = result.groups;
+
       total = result.total;
     }
 
