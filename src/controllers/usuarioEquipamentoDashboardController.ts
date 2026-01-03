@@ -26,7 +26,7 @@ export class UsuarioEquipamentoDashboardController {
    */
   async addEquipamentoToDashboard(req: Request, res: Response): Promise<void> {
     try {
-      const { userId, equipamentoId, id_metrica } = req.body;
+      const { userId, equipamentoId, id_metrica, id_tipo_grafico } = req.body;
 
       if (!userId || !equipamentoId) {
         res.status(400).json({ message: 'userId e equipamentoId são obrigatórios' });
@@ -36,7 +36,8 @@ export class UsuarioEquipamentoDashboardController {
       const result = await this.service.addEquipamentoToDashboard(
         Number(userId),
         Number(equipamentoId),
-        id_metrica ? Number(id_metrica) : null
+        id_metrica ? Number(id_metrica) : null,
+        id_tipo_grafico ? Number(id_tipo_grafico) : null
       );
       res.status(201).json(result);
     } catch (error: any) {
@@ -108,6 +109,35 @@ export class UsuarioEquipamentoDashboardController {
         equipamentoId: req.params.equipamentoId
       });
       res.status(500).json({ message: 'Erro ao verificar equipamento no dashboard' });
+    }
+  }
+
+  /**
+   * PATCH /usuario-equipamento-dashboard/item/:id/tipo-grafico
+   * Atualiza o tipo de gráfico de uma associação existente
+   */
+  async updateTipoGrafico(req: Request, res: Response): Promise<void> {
+    console.log("updateTipoGrafico");
+    try {
+      const { id } = req.params;
+      const { id_tipo_grafico } = req.body;
+
+      if (id_tipo_grafico === undefined) {
+        res.status(400).json({ message: 'id_tipo_grafico é obrigatório' });
+        return;
+      }
+
+      const result = await this.service.updateTipoGrafico(
+        Number(id),
+        id_tipo_grafico ? Number(id_tipo_grafico) : null
+      );
+      res.json(result);
+    } catch (error: any) {
+      logError('Failed to update tipo grafico', error, {
+        id: req.params.id
+      });
+      const statusCode = error.message.includes('não encontrado') ? 404 : 500;
+      res.status(statusCode).json({ message: error.message || 'Erro ao atualizar tipo de gráfico' });
     }
   }
 }

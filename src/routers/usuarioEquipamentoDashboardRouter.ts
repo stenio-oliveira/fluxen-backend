@@ -37,6 +37,12 @@ router.get(
   controller.checkEquipamentoInDashboard.bind(controller)
 );
 
+router.put(
+  '/usuario-equipamento-dashboard/item/:id/tipo-grafico',
+  authenticateToken,
+  controller.updateTipoGrafico.bind(controller)
+);
+
 export default router;
 
 

@@ -26,7 +26,8 @@ export class UsuarioEquipamentoDashboardRepository {
           }
         }
       },
-      metrica: true
+      metrica: true,
+      tipo_grafico: true
     };
   };
 
@@ -36,10 +37,12 @@ export class UsuarioEquipamentoDashboardRepository {
       id_usuario: item.id_usuario,
       id_equipamento: item.id_equipamento,
       id_metrica: item.id_metrica,
+      id_tipo_grafico: item.id_tipo_grafico,
       created_at: item.created_at,
       usuario: item.usuario,
       equipamento: item.equipamento as Equipamento,
-      metrica: item.metrica
+      metrica: item.metrica,
+      tipo_grafico: item.tipo_grafico
     };
   };
 
@@ -93,6 +96,7 @@ export class UsuarioEquipamentoDashboardRepository {
     id_usuario: number,
     id_equipamento: number,
     id_metrica?: number | null,
+    id_tipo_grafico?: number | null,
     tx?: Prisma.TransactionClient
   ): Promise<UsuarioEquipamentoDashboard> {
     const executor = tx || prisma;
@@ -102,6 +106,7 @@ export class UsuarioEquipamentoDashboardRepository {
         id_usuario,
         id_equipamento,
         id_metrica: id_metrica || null,
+        id_tipo_grafico: id_tipo_grafico || null,
         created_at: new Date()
       },
       include: this.include()
@@ -188,6 +193,27 @@ export class UsuarioEquipamentoDashboardRepository {
     });
 
     return count > 0;
+  }
+
+  /**
+   * Atualiza o tipo de gráfico de uma associação existente
+   */
+  async updateTipoGrafico(
+    id: number,
+    id_tipo_grafico: number | null,
+    tx?: Prisma.TransactionClient
+  ): Promise<UsuarioEquipamentoDashboard> {
+    const executor = tx || prisma;
+    
+    const item = await executor.usuario_equipamento_dashboard.update({
+      where: { id },
+      data: {
+        id_tipo_grafico: id_tipo_grafico || null
+      },
+      include: this.include()
+    });
+
+    return this.format(item);
   }
 }
 

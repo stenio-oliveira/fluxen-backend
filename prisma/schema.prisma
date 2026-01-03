@@ -128,20 +128,30 @@ model cliente {
   @@index([created_by])
 }
 
+model tipo_grafico {
+  id                            Int                             @id @default(autoincrement())
+  nome                          String                          @unique(map: "tipo_grafico_nome_unique") @db.VarChar(50)
+  created_at                    DateTime?                       @default(now()) @db.DateTime(0)
+  usuario_equipamento_dashboard usuario_equipamento_dashboard[]
+}
+
 model usuario_equipamento_dashboard {
-  id             Int         @id @default(autoincrement())
-  id_usuario     Int
-  id_equipamento Int
-  id_metrica     Int?
-  created_at     DateTime?   @default(now()) @db.DateTime(0)
-  equipamento    equipamento @relation(fields: [id_equipamento], references: [id], onDelete: Cascade)
-  metrica        metrica?    @relation(fields: [id_metrica], references: [id], onDelete: Cascade)
-  usuario        usuario     @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+  id              Int           @id @default(autoincrement())
+  id_usuario      Int
+  id_equipamento  Int
+  id_metrica      Int?
+  created_at      DateTime?     @default(now()) @db.DateTime(0)
+  id_tipo_grafico Int?
+  equipamento     equipamento   @relation(fields: [id_equipamento], references: [id], onDelete: Cascade)
+  metrica         metrica?      @relation(fields: [id_metrica], references: [id], onDelete: Cascade)
+  tipo_grafico    tipo_grafico? @relation(fields: [id_tipo_grafico], references: [id])
+  usuario         usuario       @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
 
   @@unique([id_usuario, id_equipamento, id_metrica], map: "usuario_equipamento_dashboard_unique")
   @@index([id_usuario])
   @@index([id_equipamento])
   @@index([id_metrica])
+  @@index([id_tipo_grafico])
 }
 
 model notificacao {

@@ -23,7 +23,8 @@ export class UsuarioEquipamentoDashboardService {
   async addEquipamentoToDashboard(
     userId: number,
     equipamentoId: number,
-    id_metrica?: number | null
+    id_metrica?: number | null,
+    id_tipo_grafico?: number | null
   ): Promise<UsuarioEquipamentoDashboard> {
     // Verifica se o equipamento existe
     const equipamento = await this.equipamentoRepository.findById(equipamentoId);
@@ -46,7 +47,7 @@ export class UsuarioEquipamentoDashboardService {
       throw new Error('Esta combinação de equipamento e métrica já está no dashboard');
     }
 
-    return this.repository.create(userId, equipamentoId, id_metrica);
+    return this.repository.create(userId, equipamentoId, id_metrica, id_tipo_grafico);
   }
 
   /**
@@ -84,6 +85,16 @@ export class UsuarioEquipamentoDashboardService {
     id_metrica?: number | null
   ): Promise<boolean> {
     return this.repository.exists(userId, equipamentoId, id_metrica);
+  }
+
+  /**
+   * Atualiza o tipo de gráfico de uma associação existente
+   */
+  async updateTipoGrafico(
+    id: number,
+    id_tipo_grafico: number | null
+  ): Promise<UsuarioEquipamentoDashboard> {
+    return this.repository.updateTipoGrafico(id, id_tipo_grafico);
   }
 }
 

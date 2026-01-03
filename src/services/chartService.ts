@@ -124,8 +124,6 @@ export class ChartService {
 
       // Calcular intervalo de tempo
       const { startDate, endDate } = this.calculateTimeRange(timeRange);
-      console.log("startDate: ", startDate)
-      console.log("endDate: ", endDate)
       // Buscar grupos de logs no intervalo
       const { groups } = await this.equipamentoLogRepository.findGroupedByTimestampWithTimeRange(
         id_equipamento,
@@ -142,7 +140,6 @@ export class ChartService {
         const value = this.extractMetricValueFromGroup(group, id_metrica);
         if (value !== null) {
           labels.push(formatISOString(group.timestamp) ?? '');
-          console.log("labels: ", labels)
           data.push(value);
         }
       });
