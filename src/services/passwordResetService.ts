@@ -51,7 +51,7 @@ export class PasswordResetService {
       const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
       // Enviar email
-      const emailSubject = 'Redefinição de Senha - SIRGS';
+      const emailSubject = 'Redefinição de Senha - FLUXEN';
       const emailHtml = `
         <html>
           <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">

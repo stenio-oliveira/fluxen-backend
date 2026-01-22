@@ -149,8 +149,8 @@ export class ChartService {
         datasets: [{
           label: `${equipamentoMetrica.metrica.nome} (${equipamentoMetrica.metrica.unidade})`,
           data,
-          borderColor: 'rgb(75, 192, 192)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
+          borderColor: '#cbf078',
+          backgroundColor: 'rgba(203, 240, 120, 0.2)',
           borderWidth: 2,
         }],
         metadata: {
@@ -216,11 +216,11 @@ export class ChartService {
           label: `${equipamentoMetrica.metrica.nome} (${equipamentoMetrica.metrica.unidade})`,
           data: [percentage, remaining],
           backgroundColor: [
-            'rgba(75, 192, 192, 0.8)',
+            'rgba(203, 240, 120, 0.8)',
             'rgba(201, 203, 207, 0.8)'
           ],
           borderColor: [
-            'rgba(75, 192, 192, 1)',
+            '#cbf078',
             'rgba(201, 203, 207, 1)'
           ],
           borderWidth: 2,
@@ -286,8 +286,8 @@ export class ChartService {
         datasets: [{
           label: `${equipamentoMetrica.metrica.nome} (${equipamentoMetrica.metrica.unidade})`,
           data,
-          backgroundColor: 'rgba(54, 162, 235, 0.8)',
-          borderColor: 'rgba(54, 162, 235, 1)',
+          backgroundColor: 'rgba(203, 240, 120, 0.8)',
+          borderColor: '#cbf078',
           borderWidth: 1,
         }],
         metadata: {

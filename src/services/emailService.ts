@@ -29,7 +29,7 @@ class EmailService {
   private fromEmail: string;
 
   constructor() {
-    this.fromEmail = process.env.EMAIL_FROM || 'no-reply@sirgs.com.br';
+    this.fromEmail = process.env.EMAIL_FROM || 'no-reply@fluxen.com.br';
   }
 
   /**
