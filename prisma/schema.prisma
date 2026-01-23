@@ -9,6 +9,7 @@ datasource db {
 
 model equipamento {
   id                            Int                             @id @default(autoincrement())
+  id_tenant                     Int?
   nome                          String
   api_key                       String?                         @db.Text
   id_cliente                    Int?
@@ -26,6 +27,7 @@ model equipamento {
 
 model equipamento_log_grupo {
   id             Int          @id @default(autoincrement())
+  id_tenant      Int?
   timestamp      DateTime?    @db.DateTime(0)
   id_equipamento Int?
   logs           Json?
@@ -36,6 +38,7 @@ model equipamento_log_grupo {
 
 model equipamento_metricas {
   id             Int         @id @default(autoincrement())
+  id_tenant      Int?
   id_equipamento Int
   id_metrica     Int
   valor_minimo   Float
@@ -51,6 +54,7 @@ model equipamento_metricas {
 
 model metrica {
   id                            Int                             @id @default(autoincrement())
+  id_tenant                     Int?
   nome                          String
   unidade                       String
   created_at                    DateTime?                       @default(now()) @db.DateTime(0)
@@ -71,41 +75,32 @@ model perfil {
 }
 
 model usuario {
-  id                                Int                             @id @default(autoincrement())
-  nome                              String
-  email                             String                          @unique
-  senha                             String
-  username                          String                          @unique
-  created_at                        DateTime?                       @default(now()) @db.DateTime(0)
-  created_by                        Int?
-  stripe_customer_id                String?                         @unique @db.VarChar(255)
-  stripe_subscription_id            String?                         @unique @db.VarChar(255)
-  subscription_status               String?                         @db.VarChar(50)
-  subscription_current_period_start DateTime?                       @db.DateTime(0)
-  subscription_current_period_end   DateTime?                       @db.DateTime(0)
-  subscription_cancel_at_period_end Boolean?                        @default(false)
-  plan_name                         String?                         @db.VarChar(100)
-  stripe_price_id                   String?                         @db.VarChar(255)
-  created_clientes                  cliente[]                       @relation("ClienteCreatedBy")
-  created_equipamentos              equipamento[]                   @relation("EquipamentoCreatedBy")
-  created_metricas                  metrica[]                       @relation("MetricaCreatedBy")
-  notificacoes                      notificacao[]
-  password_reset_audit              password_reset_audit[]
-  password_reset_token              password_reset_token[]
-  created_by_usuario                usuario?                        @relation("UsuarioCreatedBy", fields: [created_by], references: [id], map: "usuario_created_by")
-  created_usuarios                  usuario[]                       @relation("UsuarioCreatedBy")
-  usuario_equipamento_dashboard     usuario_equipamento_dashboard[]
-  usuario_perfil                    usuario_perfil[]
-  usuario_perfil_cliente            usuario_perfil_cliente[]
+  id                            Int                             @id @default(autoincrement())
+  id_tenant                     Int?
+  nome                          String
+  email                         String                          @unique
+  senha                         String
+  username                      String                          @unique
+  created_at                    DateTime?                       @default(now()) @db.DateTime(0)
+  created_by                    Int?
+  created_clientes              cliente[]                       @relation("ClienteCreatedBy")
+  created_equipamentos          equipamento[]                   @relation("EquipamentoCreatedBy")
+  created_metricas              metrica[]                       @relation("MetricaCreatedBy")
+  notificacoes                  notificacao[]
+  password_reset_audit          password_reset_audit[]
+  password_reset_token          password_reset_token[]
+  created_by_usuario            usuario?                        @relation("UsuarioCreatedBy", fields: [created_by], references: [id], map: "usuario_created_by")
+  created_usuarios              usuario[]                       @relation("UsuarioCreatedBy")
+  usuario_equipamento_dashboard usuario_equipamento_dashboard[]
+  usuario_perfil                usuario_perfil[]
+  usuario_perfil_cliente        usuario_perfil_cliente[]
 
   @@index([created_by])
-  @@index([stripe_customer_id])
-  @@index([stripe_subscription_id])
-  @@index([subscription_status])
 }
 
 model usuario_perfil {
   id         Int     @id @default(autoincrement())
+  id_tenant  Int?
   id_usuario Int
   id_perfil  Int
   perfil     perfil  @relation(fields: [id_perfil], references: [id], onDelete: Cascade)
@@ -117,6 +112,7 @@ model usuario_perfil {
 
 model cliente {
   id                     Int                      @id @default(autoincrement())
+  id_tenant              Int?
   nome                   String?                  @db.VarChar(255)
   cnpj                   String?                  @db.VarChar(20)
   created_at             DateTime?                @default(now()) @db.DateTime(0)
@@ -137,6 +133,7 @@ model tipo_grafico {
 
 model usuario_equipamento_dashboard {
   id              Int           @id @default(autoincrement())
+  id_tenant       Int?
   id_usuario      Int
   id_equipamento  Int
   id_metrica      Int?
@@ -156,6 +153,7 @@ model usuario_equipamento_dashboard {
 
 model notificacao {
   id          Int       @id @default(autoincrement())
+  id_tenant   Int?
   id_usuario  Int
   descricao   String    @db.Text
   visualizado Boolean   @default(false)
@@ -169,6 +167,7 @@ model notificacao {
 
 model usuario_perfil_cliente {
   id         Int       @id @default(autoincrement())
+  id_tenant  Int?
   id_usuario Int
   id_cliente Int
   id_perfil  Int
@@ -185,6 +184,7 @@ model usuario_perfil_cliente {
 
 model password_reset_token {
   id         Int       @id @default(autoincrement())
+  id_tenant  Int?
   id_usuario Int
   token      String    @unique(map: "token_unique") @db.VarChar(255)
   expires_at DateTime  @db.DateTime(0)
@@ -199,6 +199,7 @@ model password_reset_token {
 
 model password_reset_audit {
   id                  Int       @id @default(autoincrement())
+  id_tenant           Int?
   id_usuario          Int
   senha_hash_anterior String    @db.VarChar(255)
   senha_hash_atual    String    @db.VarChar(255)
@@ -207,4 +208,29 @@ model password_reset_audit {
 
   @@index([id_usuario], map: "id_usuario_idx")
   @@index([created_at], map: "created_at_idx")
+}
+
+model tenant {
+  id                                Int       @id @default(autoincrement())
+  nome                              String    @db.VarChar(255)
+  slug                              String    @unique(map: "slug") @db.VarChar(100)
+  ativo                             Boolean   @default(true)
+  email                             String?   @db.VarChar(255)
+  telefone                          String?   @db.VarChar(20)
+  created_at                        DateTime? @default(now()) @db.DateTime(0)
+  updated_at                        DateTime? @default(now()) @db.DateTime(0)
+  stripe_customer_id                String?   @unique(map: "stripe_customer_id") @db.VarChar(255)
+  stripe_subscription_id            String?   @unique(map: "stripe_subscription_id") @db.VarChar(255)
+  subscription_status               String?   @db.VarChar(50)
+  subscription_current_period_start DateTime? @db.DateTime(0)
+  subscription_current_period_end   DateTime? @db.DateTime(0)
+  subscription_cancel_at_period_end Boolean?  @default(false)
+  plan_name                         String?   @db.VarChar(100)
+  stripe_price_id                   String?   @db.VarChar(255)
+
+  @@index([ativo], map: "idx_tenant_ativo")
+  @@index([slug], map: "idx_tenant_slug")
+  @@index([stripe_customer_id], map: "idx_tenant_stripe_customer_id")
+  @@index([stripe_subscription_id], map: "idx_tenant_stripe_subscription_id")
+  @@index([subscription_status], map: "idx_tenant_subscription_status")
 }
