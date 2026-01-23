@@ -32,7 +32,12 @@ export class EquipamentoMetricaController {
 
   async createEquipamentoMetrica(req: Request, res: Response): Promise<void> {
     try {
-      const metrica = await this.equipamentoMetricaService.createEquipamentoMetrica(req.body);
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+      const metrica = await this.equipamentoMetricaService.createEquipamentoMetrica(req.body, tenantId);
       res.status(201).json(metrica);
     } catch (error) {
       logError('Failed to create equipment metric', error);

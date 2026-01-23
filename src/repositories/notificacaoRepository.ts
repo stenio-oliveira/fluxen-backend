@@ -16,12 +16,13 @@ export class NotificacaoRepository {
     });
   }
 
-  async createMany(data: Array<{ id_usuario: number; descricao: string }>): Promise<number> {
+  async createMany(data: Array<{ id_usuario: number; descricao: string }>, tenantId: number): Promise<number> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const result = await tx.notificacao.createMany({
         data: data.map(item => ({
           id_usuario: item.id_usuario,
           descricao: item.descricao,
+          id_tenant: tenantId,
           visualizado: false
         })),
         skipDuplicates: true

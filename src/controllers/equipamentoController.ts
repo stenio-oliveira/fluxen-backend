@@ -17,12 +17,18 @@ export class EquipamentoController {
   async getEquipamentos(req: Request, res: Response): Promise<void> {
     const filters: EquipmentFilters = req.query ? req.query as any : {};
     const userId = req.query.userId as string;
+    const tenantId = req.tenantId;
+
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID is required' });
+      return;
+    }
 
     try {
-      const equipamentos = await this.equipamentoService.getEquipamentos(Number(userId), filters);
+      const equipamentos = await this.equipamentoService.getEquipamentos(Number(userId), filters, tenantId);
       res.json(equipamentos);
     } catch (error) {
-      logError('Failed to get equipment', error, { userId });
+      logError('Failed to get equipment', error, { userId, tenantId });
       res.status(500).json({ message: 'Erro ao buscar equipamentos' });
     }
   }
@@ -30,7 +36,14 @@ export class EquipamentoController {
   async getEquipamentoById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const equipamento = await this.equipamentoService.getEquipamentoById(Number(id));
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
+      const equipamento = await this.equipamentoService.getEquipamentoById(Number(id), tenantId);
       if (!equipamento) {
         res.status(404).json({ message: 'Equipamento não encontrado' });
         return;
@@ -45,7 +58,14 @@ export class EquipamentoController {
   async createEquipamento(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id ? Number(req.user.id) : undefined;
-      const equipamento = await this.equipamentoService.createEquipamento(req.body, userId);
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
+      const equipamento = await this.equipamentoService.createEquipamento(req.body, tenantId, userId);
       res.status(201).json(equipamento);
     } catch (error: any) {
       if (error.message?.includes('permissão') || error.message?.includes('obrigatório')) {

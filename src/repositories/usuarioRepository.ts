@@ -24,20 +24,24 @@ export class UsuarioRepository {
       is_gestor: isGestor,
       is_responsavel: isResponsavel,
       is_administrador: isAdministrador,
+      id_tenant: usuario.id_tenant || null,
     };
   };
 
-  async findAll(filters?: UserFilters, tx?: Prisma.TransactionClient): Promise<Usuario[]> {
+  async findAll(filters?: UserFilters, tenantId?: number, tx?: Prisma.TransactionClient): Promise<Usuario[]> {
     console.log("findAll usuarios")
     if (tx) {
-      const where: Prisma.usuarioWhereInput = filters
-        ? {
-          AND: [
-            this.buildGeneralFilter(filters.generalFilter),
-            this.buildColumnFilters(filters.columnFilters),
-          ],
-        }
-        : {};
+      const where: Prisma.usuarioWhereInput = {
+        AND: [
+          ...(tenantId ? [{ id_tenant: tenantId }] : []),
+          ...(filters
+            ? [
+              this.buildGeneralFilter(filters.generalFilter),
+              this.buildColumnFilters(filters.columnFilters),
+            ]
+            : []),
+        ],
+      };
 
       const usuarios = await tx.usuario.findMany({
         where,
@@ -49,14 +53,17 @@ export class UsuarioRepository {
       return Promise.all(usuarios.map(usuario => this.format(usuario)));
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const where: Prisma.usuarioWhereInput = filters
-        ? {
-          AND: [
-            this.buildGeneralFilter(filters.generalFilter),
-            this.buildColumnFilters(filters.columnFilters),
-          ],
-        }
-        : {};
+      const where: Prisma.usuarioWhereInput = {
+        AND: [
+          ...(tenantId ? [{ id_tenant: tenantId }] : []),
+          ...(filters
+            ? [
+              this.buildGeneralFilter(filters.generalFilter),
+              this.buildColumnFilters(filters.columnFilters),
+            ]
+            : []),
+        ],
+      };
 
       const usuarios = await tx.usuario.findMany({
         where,
@@ -114,8 +121,12 @@ export class UsuarioRepository {
     return null;
   }
 
-  async findById(id: number): Promise<Usuario | null> {
-    const usuario = await prisma.usuario.findUnique({ where: { id }, include: this.include() });
+  async findById(id: number, tenantId?: number): Promise<Usuario | null> {
+    const where: any = { id };
+    if (tenantId) {
+      where.id_tenant = tenantId;
+    }
+    const usuario = await prisma.usuario.findFirst({ where, include: this.include() });
     return usuario ? await this.format(usuario) : null;
   }
 
@@ -133,7 +144,7 @@ export class UsuarioRepository {
     }
   }
 
-  async create(data: Partial<CreateUserDTO>, tx?: Prisma.TransactionClient): Promise<Usuario> {
+  async create(data: Partial<CreateUserDTO>, tenantId: number, tx?: Prisma.TransactionClient): Promise<Usuario> {
     const executor = tx || prisma;
     const { nome, email, senha, username, id_perfil } = data;
     const newUser = await executor.usuario.create({
@@ -142,6 +153,7 @@ export class UsuarioRepository {
         email: email || '',
         senha: senha || '',
         username: username || '',
+        id_tenant: tenantId,
       },
     });
     return await this.format(newUser);

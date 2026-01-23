@@ -68,10 +68,14 @@ export class AuthController {
       const correctPass = await bcrypt.compare(password, user.senha);
 
       if (correctPass) {
-        const token = jwt.sign({ id: user.id, email: user.email }, secret, {
+        const token = jwt.sign({ 
+          id: user.id, 
+          email: user.email,
+          tenantId: user.id_tenant 
+        }, secret, {
           expiresIn: "2d",
         });
-        logInfo('User logged in successfully', { userId: user.id, email });
+        logInfo('User logged in successfully', { userId: user.id, email, tenantId: user.id_tenant });
         return res.json({ token, user });
       }
 

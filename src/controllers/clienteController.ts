@@ -9,6 +9,7 @@ export class ClienteController {
   async getClientes(req: Request, res: Response): Promise<void> {
     const filters: ClienteFilters = req.query ? req.query as any : {};
     const userId = req.query['userId'] || req.user?.id;
+    const tenantId = req.tenantId;
 
     if (!userId) {
       logWarn('Get clients failed: missing user ID', { path: req.path });
@@ -16,11 +17,17 @@ export class ClienteController {
       return;
     }
 
+    if (!tenantId) {
+      logWarn('Get clients failed: missing tenant ID', { path: req.path });
+      res.status(400).json({ message: 'Tenant ID is required' });
+      return;
+    }
+
     try {
-      const clientes = await this.clienteService.getClientes(Number(userId), filters);
+      const clientes = await this.clienteService.getClientes(Number(userId), filters, tenantId);
       res.json(clientes);
     } catch (error) {
-      logError('Failed to get clients', error, { userId });
+      logError('Failed to get clients', error, { userId, tenantId });
       res.status(500).json({ message: 'Erro ao buscar clientes' });
     }
   }
@@ -28,7 +35,14 @@ export class ClienteController {
   async getClienteById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const cliente = await this.clienteService.getClienteById(Number(id));
+      const tenantId = req.tenantId;
+      
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
+      const cliente = await this.clienteService.getClienteById(Number(id), tenantId);
       if (!cliente) {
         res.status(404).json({ message: 'Cliente não encontrado' });
         return;
@@ -42,7 +56,12 @@ export class ClienteController {
 
   async createCliente(req: Request, res: Response): Promise<void> {
     try {
-      const cliente = await this.clienteService.createCliente(req.body);
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+      const cliente = await this.clienteService.createCliente(req.body, tenantId);
       res.status(201).json(cliente);
     } catch (error) {
       logError('Failed to create client', error);
@@ -75,11 +94,17 @@ export class ClienteController {
   async getClientesByManager(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user?.id ? Number(req.user.id) : undefined;
+      const tenantId = req.tenantId;
       console.log('getClientesByManager - userId:', userId);
       console.log('getClientesByManager - req.user:', req.user);
       
       if (!userId) {
         res.status(400).json({ message: 'User ID is required' });
+        return;
+      }
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
         return;
       }
 
@@ -93,7 +118,7 @@ export class ClienteController {
       };
 
       console.log('getClientesByManager - filters:', filters);
-      const clientes = await this.clienteService.getClientesByManager(userId, filters);
+      const clientes = await this.clienteService.getClientesByManager(userId, tenantId, filters);
       console.log('getClientesByManager - clientes retornados:', clientes);
       res.json(clientes);
     } catch (error) {

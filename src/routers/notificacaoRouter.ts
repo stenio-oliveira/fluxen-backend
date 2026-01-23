@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { NotificacaoController } from '../controllers/notificacaoController';
 import { authenticateToken } from '../middlewares/authMiddleware';
+import { validateTenant } from '../middlewares/tenantMiddleware';
 
 const router = Router();
 const controller = new NotificacaoController();
@@ -9,6 +10,7 @@ const controller = new NotificacaoController();
 router.get(
   '/notificacoes',
   authenticateToken,
+  validateTenant,
   controller.getNotifications.bind(controller)
 );
 
@@ -16,6 +18,7 @@ router.get(
 router.get(
   '/notificacoes/count',
   authenticateToken,
+  validateTenant,
   controller.getUnreadCount.bind(controller)
 );
 
@@ -23,6 +26,7 @@ router.get(
 router.put(
   '/notificacoes/:id/visualizar',
   authenticateToken,
+  validateTenant,
   controller.markAsRead.bind(controller)
 );
 
@@ -30,6 +34,7 @@ router.put(
 router.put(
   '/notificacoes/visualizar-todas',
   authenticateToken,
+  validateTenant,
   controller.markAllAsRead.bind(controller)
 );
 

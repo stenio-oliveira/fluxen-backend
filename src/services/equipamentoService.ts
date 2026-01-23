@@ -9,7 +9,7 @@ export class EquipamentoService {
   private equipamentoRepository = new EquipamentoRepository();
   private usuarioRepository = new UsuarioRepository();
 
-  async getEquipamentos(userId: number, filters: EquipmentFilters): Promise<Equipamento[] | void[]> {
+  async getEquipamentos(userId: number, filters: EquipmentFilters, tenantId: number): Promise<Equipamento[] | void[]> {
     const isAdmin = await this.usuarioRepository.isAdmin(userId);
     const isResponsable = await this.usuarioRepository.isResponsable(userId);
     const isManager = await this.usuarioRepository.isManager(userId);
@@ -17,22 +17,22 @@ export class EquipamentoService {
     console.log("isResponsable", isResponsable);
     console.log("isManager", isManager);
     if(isAdmin) {
-      return await this.equipamentoRepository.findAll(filters);
+      return await this.equipamentoRepository.findAll(filters, tenantId);
     }
     if (isManager) {
-      return await this.equipamentoRepository.findByManagerUser(userId, filters);
+      return await this.equipamentoRepository.findByManagerUser(userId, filters, tenantId);
     }
     if(isResponsable) {
-      return await this.equipamentoRepository.findByResponsableUser(userId, filters);
+      return await this.equipamentoRepository.findByResponsableUser(userId, filters, tenantId);
     }
     return [];
   }
 
-  async getEquipamentoById(id: number): Promise<Equipamento | null> {
-    return this.equipamentoRepository.findById(id);
+  async getEquipamentoById(id: number, tenantId: number): Promise<Equipamento | null> {
+    return this.equipamentoRepository.findById(id, tenantId);
   }
 
-  async createEquipamento(data: Partial<Equipamento>, userId?: number): Promise<Equipamento | null> {
+  async createEquipamento(data: Partial<Equipamento>, tenantId: number, userId?: number): Promise<Equipamento | null> {
     // Se userId foi fornecido, verificar permissões
     if (userId !== undefined) {
       const isAdmin = await this.usuarioRepository.isAdmin(userId);
@@ -48,7 +48,8 @@ export class EquipamentoService {
           where: {
             id_usuario: userId,
             id_cliente: data.id_cliente,
-            id_perfil: 3 // gestor
+            id_perfil: 3, // gestor
+            id_tenant: tenantId,
           }
         });
 
@@ -58,7 +59,7 @@ export class EquipamentoService {
       }
     }
 
-    return this.equipamentoRepository.create(data);
+    return this.equipamentoRepository.create(data, tenantId);
   }
 
   async updateEquipamento(id: number, data: Partial<Equipamento>): Promise<Equipamento> {

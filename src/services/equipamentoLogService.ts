@@ -101,19 +101,34 @@ export class EquipamentoLogService {
   }
 
   async createManyEquipamentoLogs(
-    data: CreateEquipamentoLogsDTO
+    data: CreateEquipamentoLogsDTO,
+    tenantId?: number
   ): Promise<any> {
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const equipamentoId = data.logs[0].id_equipamento;
 
       if (!equipamentoId) return { success: false, message: 'Equipamento ID não fornecido' };
+      
+      // Se tenantId não foi fornecido, buscar do equipamento
+      let equipamentoTenantId = tenantId;
+      if (!equipamentoTenantId) {
+        const equipamento = await tx.equipamento.findUnique({
+          where: { id: equipamentoId },
+          select: { id_tenant: true }
+        });
+        if (!equipamento || !equipamento.id_tenant) {
+          throw new Error('Equipamento não encontrado ou sem tenant associado');
+        }
+        equipamentoTenantId = equipamento.id_tenant;
+      }
+
       const equipamentoMetricas =
         await this.equipamentoMetricaRepository.findByEquipamentoId(
           equipamentoId,
           tx
         );
       const metricaToEquipamentoMetrica = new Map<number, EquipamentoMetrica>();
-      const newGroup = await this.equipamentoLogRepository.createGroup(equipamentoId ,tx);
+      const newGroup = await this.equipamentoLogRepository.createGroup(equipamentoId, equipamentoTenantId, tx);
 
       //mapeando equipamentoMetrica (que contém informações para conversão) para cada métrica em cada log
       for (const equipamentoMetrica of equipamentoMetricas) {

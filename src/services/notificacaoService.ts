@@ -32,11 +32,12 @@ export class NotificacaoService {
         }
       });
 
-      if (!equipamento || !equipamento.cliente) {
-        return; // Equipamento não encontrado ou sem cliente
+      if (!equipamento || !equipamento.cliente || !equipamento.id_tenant) {
+        return; // Equipamento não encontrado, sem cliente ou sem tenant
       }
 
       const cliente = equipamento.cliente;
+      const tenantId = equipamento.id_tenant;
       const valorConvertido = log.valor_convertido;
       const equipamentoMetricaData = equipamentoMetrica;
 
@@ -69,23 +70,25 @@ export class NotificacaoService {
       const descricao = `Alerta ${tipoAlerta === 'min' ? 'MÍNIMO' : 'MÁXIMO'}: Equipamento "${equipamento.nome}" - Métrica "${metrica?.nome || 'Desconhecida'}" com valor ${valorConvertido.toFixed(2)} ${metrica?.unidade || ''} (${timestamp.toLocaleString('pt-BR')})`;
 
       // Criar notificações para responsáveis, gestores e administradores do cliente
-      // Buscar todos os usuários com perfil de responsável (id_perfil: 2) ou gestor (id_perfil: 3) para este cliente
+      // Buscar todos os usuários com perfil de responsável (id_perfil: 2) ou gestor (id_perfil: 3) para este cliente do mesmo tenant
       const usuariosNotificacao = await prisma.usuario_perfil_cliente.findMany({
         where: {
           id_cliente: cliente.id,
           id_perfil: {
             in: [2, 3] // 2 = responsável, 3 = gestor
-          }
+          },
+          id_tenant: tenantId
         },
         select: {
           id_usuario: true
         }
       });
 
-      // Buscar também administradores (id_perfil: 1) que podem ter acesso a todos os clientes
+      // Buscar também administradores (id_perfil: 1) que podem ter acesso a todos os clientes do mesmo tenant
       const administradores = await prisma.usuario_perfil.findMany({
         where: {
-          id_perfil: 1 // 1 = administrador
+          id_perfil: 1, // 1 = administrador
+          id_tenant: tenantId
         },
         select: {
           id_usuario: true
@@ -118,7 +121,7 @@ export class NotificacaoService {
       });
 
       if (notificacoesParaCriar.length > 0) {
-        await this.notificacaoRepository.createMany(notificacoesParaCriar);
+        await this.notificacaoRepository.createMany(notificacoesParaCriar, tenantId);
         logInfo(`[Notifications] Created ${notificacoesParaCriar.length} notification(s) for ${tipoAlerta.toUpperCase()} alarm - Equipment: ${equipamento.nome}, Metric: ${metrica?.nome}, Value: ${valorConvertido.toFixed(2)}`);
       }
     } catch (error) {
@@ -130,30 +133,48 @@ export class NotificacaoService {
   async processNotificationsForUser(userId: number): Promise<void> {
     logInfo(`[Scan] Starting notification scan for user ${userId}`);
 
+    // Obter tenantId do usuário
+    const usuario = await prisma.usuario.findUnique({
+      where: { id: userId },
+      select: { id_tenant: true }
+    });
+
+    if (!usuario || !usuario.id_tenant) {
+      logInfo(`[Scan] User ${userId} has no tenant - skipping`);
+      return;
+    }
+
+    const tenantId = usuario.id_tenant;
+
     // Verificar se o usuário é administrador (tem perfil 1)
     const isAdmin = await prisma.usuario_perfil.findFirst({
       where: {
         id_usuario: userId,
-        id_perfil: 1
+        id_perfil: 1,
+        id_tenant: tenantId
       }
     });
 
     let clientesIds: number[] = [];
 
     if (isAdmin) {
-      // Se for admin, buscar todos os clientes
+      // Se for admin, buscar todos os clientes do mesmo tenant
       const todosClientes = await prisma.cliente.findMany({
+        where: {
+          id_tenant: tenantId
+        },
         select: { id: true }
       });
       clientesIds = todosClientes.map(c => c.id);
     } else {
-      // Buscar clientes onde o usuário é responsável (id_perfil: 2) ou gestor (id_perfil: 3)
+      // Buscar clientes onde o usuário é responsável (id_perfil: 2) ou gestor (id_perfil: 3) do mesmo tenant
       const clientesUsuario = await prisma.usuario_perfil_cliente.findMany({
         where: {
           id_usuario: userId,
           id_perfil: {
             in: [2, 3] // 2 = responsável, 3 = gestor
-          }
+          },
+          id_tenant: tenantId
         },
         select: {
           id_cliente: true
@@ -166,7 +187,8 @@ export class NotificacaoService {
       where: {
         id: {
           in: clientesIds
-        }
+        },
+        id_tenant: tenantId
       }
     });
 
@@ -177,12 +199,13 @@ export class NotificacaoService {
 
     logInfo(`[Scan] Found ${clientesIds.length} client(s) for user ${userId}`);
 
-    // Buscar todos os equipamentos desses clientes
+    // Buscar todos os equipamentos desses clientes do mesmo tenant
     const equipamentos = await prisma.equipamento.findMany({
       where: {
         id_cliente: {
           in: clientesIds
-        }
+        },
+        id_tenant: tenantId
       }
     });
 
@@ -277,23 +300,25 @@ export class NotificacaoService {
           // Criar notificação para responsáveis, gestores e administradores do cliente
           const cliente = todosClientes.find(c => c && c.id === equipamento.id_cliente);
           if (cliente) {
-            // Buscar todos os usuários com perfil de responsável (id_perfil: 2) ou gestor (id_perfil: 3) para este cliente
+            // Buscar todos os usuários com perfil de responsável (id_perfil: 2) ou gestor (id_perfil: 3) para este cliente do mesmo tenant
             const usuariosNotificacao = await prisma.usuario_perfil_cliente.findMany({
               where: {
                 id_cliente: cliente.id,
                 id_perfil: {
                   in: [2, 3] // 2 = responsável, 3 = gestor
-                }
+                },
+                id_tenant: tenantId
               },
               select: {
                 id_usuario: true
               }
             });
 
-            // Buscar também administradores (id_perfil: 1)
+            // Buscar também administradores (id_perfil: 1) do mesmo tenant
             const administradores = await prisma.usuario_perfil.findMany({
               where: {
-                id_perfil: 1 // 1 = administrador
+                id_perfil: 1, // 1 = administrador
+                id_tenant: tenantId
               },
               select: {
                 id_usuario: true
@@ -330,7 +355,7 @@ export class NotificacaoService {
 
     // Criar notificações em lote
     if (notificacoesParaCriar.length > 0) {
-      const created = await this.notificacaoRepository.createMany(notificacoesParaCriar);
+      const created = await this.notificacaoRepository.createMany(notificacoesParaCriar, tenantId);
       logInfo(`[Scan] Created ${created} notification(s) from ${totalAlarmsDetected} alarm(s) detected`);
     } else {
       logInfo(`[Scan] No alarms detected - no notifications created`);

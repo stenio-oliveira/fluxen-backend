@@ -27,15 +27,22 @@ export class UsuarioEquipamentoDashboardController {
   async addEquipamentoToDashboard(req: Request, res: Response): Promise<void> {
     try {
       const { userId, equipamentoId, id_metrica, id_tipo_grafico } = req.body;
+      const tenantId = req.tenantId;
 
       if (!userId || !equipamentoId) {
         res.status(400).json({ message: 'userId e equipamentoId são obrigatórios' });
         return;
       }
 
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
       const result = await this.service.addEquipamentoToDashboard(
         Number(userId),
         Number(equipamentoId),
+        tenantId,
         id_metrica ? Number(id_metrica) : null,
         id_tipo_grafico ? Number(id_tipo_grafico) : null
       );

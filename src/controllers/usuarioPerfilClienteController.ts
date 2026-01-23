@@ -21,11 +21,18 @@ export class UsuarioPerfilClienteController {
   async updateRelacionamentos(req: Request, res: Response): Promise<void> {
     try {
       const { id_usuario } = req.params;
+      const tenantId = req.tenantId;
+      
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
       console.log(req.body.relacionamentos);
       const relacionamentos = await this.service.updateRelacionamentos({
         id_usuario: Number(id_usuario),
         relacionamentos: req.body.relacionamentos || [],
-      });
+      }, tenantId);
       res.json(relacionamentos);
     } catch (error) {
       logError('Failed to update usuario_perfil_cliente relationships', error, {
@@ -51,10 +58,17 @@ export class UsuarioPerfilClienteController {
   async updateRelacionamentosByCliente(req: Request, res: Response): Promise<void> {
     try {
       const { id_cliente } = req.params;
+      const tenantId = req.tenantId;
+      
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
       const relacionamentos = await this.service.updateRelacionamentosByCliente({
         id_cliente: Number(id_cliente),
         relacionamentos: req.body.relacionamentos || [],
-      });
+      }, tenantId);
       res.json(relacionamentos);
     } catch (error) {
       logError('Failed to update usuario_perfil_cliente relationships by cliente', error, {

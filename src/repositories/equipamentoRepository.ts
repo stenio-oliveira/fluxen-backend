@@ -8,6 +8,7 @@ export class EquipamentoRepository {
   findByResponsableUser = async (
     userId: number,
     filters: EquipmentFilters,
+    tenantId: number,
     tx?: Prisma.TransactionClient
   ): Promise<Equipamento[] | void[]> => {
     console.log("findByResponsableUser equipamentos")
@@ -15,6 +16,7 @@ export class EquipamentoRepository {
     const { generalFilter, columnFilters } = filters;
     const clients = await executor.cliente.findMany({
       where: {
+        id_tenant: tenantId,
         usuario_perfil_cliente: {
           some: {
             id_usuario: userId,
@@ -28,6 +30,7 @@ export class EquipamentoRepository {
 
     const where: Prisma.equipamentoWhereInput = {
       AND: [
+        { id_tenant: tenantId },
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
         {
@@ -52,6 +55,7 @@ export class EquipamentoRepository {
   findByManagerUser = async (
     userId: number,
     filters: EquipmentFilters,
+    tenantId: number,
     tx?: Prisma.TransactionClient
   ): Promise<Equipamento[] | void[]> => {
     console.log("findByManagerUser equipamentos")
@@ -59,6 +63,7 @@ export class EquipamentoRepository {
     const { generalFilter, columnFilters } = filters;
     const clients = await executor.cliente.findMany({
       where: {
+        id_tenant: tenantId,
         usuario_perfil_cliente: {
           some: {
             id_usuario: userId,
@@ -72,6 +77,7 @@ export class EquipamentoRepository {
 
     const where: Prisma.equipamentoWhereInput = {
       AND: [
+        { id_tenant: tenantId },
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
         {
@@ -95,6 +101,7 @@ export class EquipamentoRepository {
 
   findAll = async (
     filters: EquipmentFilters,
+    tenantId: number,
     tx?: Prisma.TransactionClient
   ): Promise<Equipamento[] | void[]> => {
 
@@ -103,6 +110,7 @@ export class EquipamentoRepository {
     const { generalFilter, columnFilters } = filters;
     const where: Prisma.equipamentoWhereInput = {
       AND: [
+        { id_tenant: tenantId },
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
       ],
@@ -124,21 +132,21 @@ export class EquipamentoRepository {
     };
   };
 
-  findById = async (id: number, tx?: Prisma.TransactionClient): Promise<Equipamento | null> => {
+  findById = async (id: number, tenantId: number, tx?: Prisma.TransactionClient): Promise<Equipamento | null> => {
     if (tx) {
       return tx.equipamento
-        .findUnique({ where: { id }, include: this.include() })
+        .findFirst({ where: { id, id_tenant: tenantId }, include: this.include() })
         .then((equipamento) => this.format(equipamento));
     }
 
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       return tx.equipamento
-        .findUnique({ where: { id }, include: this.include() })
+        .findFirst({ where: { id, id_tenant: tenantId }, include: this.include() })
         .then((equipamento) => this.format(equipamento));
     });
   };
 
-  create = async (data: Partial<Equipamento>, tx?: Prisma.TransactionClient): Promise<Equipamento | null> => {
+  create = async (data: Partial<Equipamento>, tenantId: number, tx?: Prisma.TransactionClient): Promise<Equipamento | null> => {
     // Gerar API key automaticamente
     const generateApiKey = (equipamentoId: number): string => {
       return `eq_${equipamentoId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -149,6 +157,7 @@ export class EquipamentoRepository {
           data: {
             nome: data.nome || '',
             id_cliente: data.id_cliente,
+            id_tenant: tenantId,
             api_key: null, // Será atualizado após a criação
           },
           include: this.include(),
@@ -170,6 +179,7 @@ export class EquipamentoRepository {
           data: {
             nome: data.nome || '',
             id_cliente: data.id_cliente,
+            id_tenant: tenantId,
             api_key: null, // Será atualizado após a criação
           },
           include: this.include(),

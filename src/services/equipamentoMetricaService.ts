@@ -13,8 +13,8 @@ export class EquipamentoMetricaService {
     return this.equipamentoMetricaRepository.findById(id);
   }
 
-  async createEquipamentoMetrica(data: EquipamentoMetrica): Promise<EquipamentoMetrica> {
-    return this.equipamentoMetricaRepository.create(data);
+  async createEquipamentoMetrica(data: EquipamentoMetrica, tenantId: number): Promise<EquipamentoMetrica> {
+    return this.equipamentoMetricaRepository.create(data, tenantId);
   }
 
   async updateEquipamentoMetrica(id: number, data: Partial<EquipamentoMetrica>, userId?: number): Promise<EquipamentoMetrica> {

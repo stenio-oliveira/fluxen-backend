@@ -25,7 +25,7 @@ export class UsuarioPerfilClienteService {
     return this.repository.findByUsuarioId(id_usuario);
   }
 
-  async updateRelacionamentos(data: UpdateUsuarioPerfilClienteDTO) {
+  async updateRelacionamentos(data: UpdateUsuarioPerfilClienteDTO, tenantId: number) {
     const { id_usuario, relacionamentos } = data;
 
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -35,13 +35,17 @@ export class UsuarioPerfilClienteService {
         where: {
           id_usuario,
           id_perfil: 1,
+          id_tenant: tenantId,
         },
       });
 
-      // Se não for admin, deletar todos os relacionamentos usuario_perfil_cliente
+      // Se não for admin, deletar todos os relacionamentos usuario_perfil_cliente do tenant
       if (!isAdmin) {
         await tx.usuario_perfil_cliente.deleteMany({
-          where: { id_usuario },
+          where: { 
+            id_usuario,
+            id_tenant: tenantId,
+          },
         });
       }
 
@@ -55,6 +59,7 @@ export class UsuarioPerfilClienteService {
             id_usuario,
             id_cliente,
             id_perfil,
+            id_tenant: tenantId,
           },
         });
 
@@ -64,6 +69,7 @@ export class UsuarioPerfilClienteService {
               id_usuario,
               id_cliente,
               id_perfil,
+              id_tenant: tenantId,
             },
           });
         }
@@ -78,13 +84,16 @@ export class UsuarioPerfilClienteService {
     return this.repository.findByClienteId(id_cliente);
   }
 
-  async updateRelacionamentosByCliente(data: UpdateClienteRelacionamentosDTO) {
+  async updateRelacionamentosByCliente(data: UpdateClienteRelacionamentosDTO, tenantId: number) {
     const { id_cliente, relacionamentos } = data;
 
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // Deletar todos os relacionamentos existentes do cliente
+      // Deletar todos os relacionamentos existentes do cliente do tenant
       await tx.usuario_perfil_cliente.deleteMany({
-        where: { id_cliente },
+        where: { 
+          id_cliente,
+          id_tenant: tenantId,
+        },
       });
 
       // Criar novos relacionamentos
@@ -95,6 +104,7 @@ export class UsuarioPerfilClienteService {
             id_usuario,
             id_cliente,
             id_perfil,
+            id_tenant: tenantId,
           },
         });
       }

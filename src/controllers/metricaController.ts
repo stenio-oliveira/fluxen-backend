@@ -16,9 +16,15 @@ export class MetricaController {
 
   async getMetricas(req: Request, res: Response): Promise<void> {
     const filters : MetricasFilters = req.query ? req.query as any: {};
-    try {
+    const tenantId = req.tenantId;
 
-      const metricas = await this.metricaService.getMetricas(filters);
+    if (!tenantId) {
+      res.status(400).json({ message: 'Tenant ID is required' });
+      return;
+    }
+
+    try {
+      const metricas = await this.metricaService.getMetricas(filters, tenantId);
       res.json(metricas);
     } catch (error) {
       logError('Failed to get metrics', error);
@@ -30,8 +36,16 @@ export class MetricaController {
     try {
       const { id_equipamento } = req.params;
       const userId = req.user?.id ? Number(req.user.id) : undefined;
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
       const metricas = await this.metricaService.getMetricaByEquipamentoId(
         Number(id_equipamento),
+        tenantId,
         userId
       );
       res.json(metricas);
@@ -50,11 +64,19 @@ export class MetricaController {
       const { id_equipamento, id_metrica } = req.params;
       const { valor_minimo, valor_maximo, alarme_minimo, alarme_maximo } = req.body;
       const userId = req.user?.id ? Number(req.user.id) : undefined;
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
       const metrica = await this.metricaService.associateMetricToEquipamento(
         Number(id_metrica),
         Number(id_equipamento),
         Number(valor_minimo),
         Number(valor_maximo),
+        tenantId,
         alarme_minimo !== undefined && alarme_minimo !== null ? Number(alarme_minimo) : null,
         alarme_maximo !== undefined && alarme_maximo !== null ? Number(alarme_maximo) : null,
         userId
@@ -74,9 +96,17 @@ export class MetricaController {
     try {
       const { id_equipamento, id_metrica } = req.params;
       const userId = req.user?.id ? Number(req.user.id) : undefined;
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
       const associatedMetrics = await this.metricaService.desassociateMetricToEquipamento(
         Number(id_metrica),
         Number(id_equipamento),
+        tenantId,
         userId
       );
       res.json(associatedMetrics);
@@ -93,7 +123,14 @@ export class MetricaController {
   async getMetricaById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const metrica = await this.metricaService.getMetricaById(Number(id));
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
+      const metrica = await this.metricaService.getMetricaById(Number(id), tenantId);
       if (!metrica) {
         res.status(404).json({ message: 'Métrica não encontrada' });
         return;
@@ -107,7 +144,12 @@ export class MetricaController {
 
   async createMetrica(req: Request, res: Response): Promise<void> {
     try {
-      const metrica = await this.metricaService.createMetrica(req.body);
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+      const metrica = await this.metricaService.createMetrica(req.body, tenantId);
       res.status(201).json(metrica);
     } catch (error) {
       logError('Failed to create metric', error);

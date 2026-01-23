@@ -26,7 +26,7 @@ app.use(
   cors({
     origin: true, // Permite qualquer origem
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-Tenant-Id"],
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204,

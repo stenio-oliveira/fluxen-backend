@@ -6,6 +6,7 @@ export interface Usuario {
   username: string;
   perfil_nome?: string;
   is_gestor?: boolean; // Indica se o usuário é gestor de algum cliente
+  id_tenant?: number | null; // ID do tenant ao qual o usuário pertence
   // Campos de auditoria
   created_at?: Date | null;
   created_by?: number | null;

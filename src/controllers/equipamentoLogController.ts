@@ -56,7 +56,9 @@ export class EquipamentoLogController {
       logInfo('Processing logs synchronously (RabbitMQ unavailable or queue full)', {
         equipamentoId
       });
-      const group = await this.equipamentoLogService.createManyEquipamentoLogs(data);
+      // Obter tenantId do equipamento autenticado
+      const tenantId = req.equipamento?.id_tenant;
+      const group = await this.equipamentoLogService.createManyEquipamentoLogs(data, tenantId);
       logInfo('Equipment logs processed successfully (sync)', {
         equipamentoId,
         groupId: group.id,

@@ -10,13 +10,27 @@ const reportService = new ReportService();
 
 async function processLogs(data: any): Promise<void> {
     try {
+        const equipamentoId = data.logs?.[0]?.id_equipamento;
         logInfo('Processing logs from queue', {
-            equipamentoId: data.logs?.[0]?.id_equipamento,
+            equipamentoId,
             logsCount: data.logs?.length || 0
         });
-        await equipamentoLogService.createManyEquipamentoLogs(data);
+        
+        // Obter tenantId do equipamento
+        let tenantId: number | undefined;
+        if (equipamentoId) {
+            const equipamento = await prisma.equipamento.findUnique({
+                where: { id: equipamentoId },
+                select: { id_tenant: true }
+            });
+            if (equipamento?.id_tenant) {
+                tenantId = equipamento.id_tenant;
+            }
+        }
+        
+        await equipamentoLogService.createManyEquipamentoLogs(data, tenantId);
         logInfo('Logs processed successfully', {
-            equipamentoId: data.logs?.[0]?.id_equipamento
+            equipamentoId
         });
     } catch (error) {
         logError('Failed to process logs from queue', error);

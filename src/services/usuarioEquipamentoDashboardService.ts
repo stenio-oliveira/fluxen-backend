@@ -23,11 +23,12 @@ export class UsuarioEquipamentoDashboardService {
   async addEquipamentoToDashboard(
     userId: number,
     equipamentoId: number,
+    tenantId: number,
     id_metrica?: number | null,
     id_tipo_grafico?: number | null
   ): Promise<UsuarioEquipamentoDashboard> {
     // Verifica se o equipamento existe
-    const equipamento = await this.equipamentoRepository.findById(equipamentoId);
+    const equipamento = await this.equipamentoRepository.findById(equipamentoId, tenantId);
     if (!equipamento) {
       throw new Error('Equipamento não encontrado');
     }
@@ -47,7 +48,7 @@ export class UsuarioEquipamentoDashboardService {
       throw new Error('Esta combinação de equipamento e métrica já está no dashboard');
     }
 
-    return this.repository.create(userId, equipamentoId, id_metrica, id_tipo_grafico);
+    return this.repository.create(userId, equipamentoId, tenantId, id_metrica, id_tipo_grafico);
   }
 
   /**

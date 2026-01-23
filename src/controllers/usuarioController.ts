@@ -28,8 +28,15 @@ export class UsuarioController {
   async getUsuarios(req: Request, res: Response): Promise<void> {
     try {
       const filters: UserFilters = req.query ? req.query as any: {};
-      const userId = req.query.userId as string; 
-      const usuarios = await this.usuarioService.getUsuarios(Number(userId), filters);
+      const userId = req.query.userId as string;
+      const tenantId = req.tenantId;
+
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+
+      const usuarios = await this.usuarioService.getUsuarios(Number(userId), filters, tenantId);
       res.json(usuarios);
     } catch (error) {
       logError('Failed to get users', error);
@@ -67,7 +74,12 @@ export class UsuarioController {
 
   async createUsuario(req: Request, res: Response): Promise<void> {
     try {
-      const usuario = await this.usuarioService.createUsuario(req.body);
+      const tenantId = req.tenantId;
+      if (!tenantId) {
+        res.status(400).json({ message: 'Tenant ID is required' });
+        return;
+      }
+      const usuario = await this.usuarioService.createUsuario(req.body, tenantId);
       res.status(201).json(usuario);
     } catch (error) {
       logError('Failed to create user', error);

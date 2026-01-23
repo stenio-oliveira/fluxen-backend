@@ -8,8 +8,8 @@ import { Prisma } from '@prisma/client';
 export class UsuarioService {
   private usuarioRepository = new UsuarioRepository();
 
-  async getUsuarios(userId: number, filters: UserFilters): Promise<Usuario[]> {
-    return await this.usuarioRepository.findAll(filters);
+  async getUsuarios(userId: number, filters: UserFilters, tenantId: number): Promise<Usuario[]> {
+    return await this.usuarioRepository.findAll(filters, tenantId);
   }
 
   async getClienteByEquipamentoId(id_equipamento: number): Promise<Usuario | null> {
@@ -20,13 +20,13 @@ export class UsuarioService {
     return this.usuarioRepository.findById(id);
   }
 
-  async createUsuario(data: CreateUserDTO): Promise<Usuario> {
+  async createUsuario(data: CreateUserDTO, tenantId: number): Promise<Usuario> {
     const { nome, email, senha, username, id_perfil, relacionamentos = [] } = data;
 
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Hash da senha antes de criar o usuário
       const encryptedSenha = await bcrypt.hash(senha, 10);
-      const newUser = await this.usuarioRepository.create({ nome, email, senha: encryptedSenha, username }, tx);
+      const newUser = await this.usuarioRepository.create({ nome, email, senha: encryptedSenha, username }, tenantId, tx);
 
       // Criando usuário administrador
       if (id_perfil === 1) {
@@ -34,6 +34,7 @@ export class UsuarioService {
           data: {
             id_usuario: newUser.id,
             id_perfil: id_perfil,
+            id_tenant: tenantId,
           },
         });
         if (!newUserProfileAssociation) {
@@ -50,6 +51,7 @@ export class UsuarioService {
             id_usuario: newUser.id,
             id_cliente,
             id_perfil: perfilId,
+            id_tenant: tenantId,
           },
         });
       }

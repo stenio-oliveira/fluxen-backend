@@ -27,13 +27,25 @@ export class EquipamentoLogRepository {
     });
   }
 
-  async createGroup( id_equipamento: number, transaction? : Prisma.TransactionClient,): Promise<EquipamentoLogGrupo> {
+  async createGroup( id_equipamento: number, tenantId: number, transaction? : Prisma.TransactionClient,): Promise<EquipamentoLogGrupo> {
     const timestamp = toBrazilianTimezone(new Date());
     if(transaction){ 
-      return transaction.equipamento_log_grupo.create({ data: { timestamp, id_equipamento } });
+      return transaction.equipamento_log_grupo.create({ 
+        data: { 
+          timestamp, 
+          id_equipamento,
+          id_tenant: tenantId,
+        } 
+      });
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.equipamento_log_grupo.create({ data: { timestamp, id_equipamento } });
+      return tx.equipamento_log_grupo.create({ 
+        data: { 
+          timestamp, 
+          id_equipamento,
+          id_tenant: tenantId,
+        } 
+      });
     });
   }
 

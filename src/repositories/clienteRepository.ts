@@ -18,12 +18,14 @@ export class ClienteRepository {
   findByResponsableUser = async (
     userId: number,
     filters: ClienteFilters,
+    tenantId: number,
     tx?: Prisma.TransactionClient
   ): Promise<Cliente[] | void[]> => {
     const { generalFilter, columnFilters } = filters;
     const executor = tx || prisma;
     const clients = await executor.cliente.findMany({
       where: {
+        id_tenant: tenantId,
         usuario_perfil_cliente: {
           some: {
             id_usuario: userId,
@@ -37,6 +39,7 @@ export class ClienteRepository {
     //filtra os clientes pelos filtros
     const where: Prisma.clienteWhereInput = {
       AND: [
+        { id_tenant: tenantId },
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
         {
@@ -63,6 +66,7 @@ export class ClienteRepository {
   findByManagerUser = async (
     userId: number,
     filters: ClienteFilters,
+    tenantId: number,
     tx?: Prisma.TransactionClient
   ): Promise<Cliente[] | void[]> => {
     console.log("findByManagerUser clientes")
@@ -70,6 +74,7 @@ export class ClienteRepository {
     const executor = tx || prisma;
     const clients = await executor.cliente.findMany({
       where: {
+        id_tenant: tenantId,
         usuario_perfil_cliente: {
           some: {
             id_usuario: userId,
@@ -83,6 +88,7 @@ export class ClienteRepository {
     //filtra os clientes pelos filtros
     const where: Prisma.clienteWhereInput = {
       AND: [
+        { id_tenant: tenantId },
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
         {
@@ -105,12 +111,14 @@ export class ClienteRepository {
 
   findAll = async (
     filters: ClienteFilters,
+    tenantId: number,
     tx?: Prisma.TransactionClient
   ): Promise<Cliente[] | void[]> => {
     const executor = tx || prisma;
     const { generalFilter, columnFilters } = filters;
     const where: Prisma.clienteWhereInput = {
       AND: [
+        { id_tenant: tenantId },
         this.buildGeneralFilter(generalFilter),
         this.buildColumnFilters(columnFilters),
       ],
@@ -133,21 +141,21 @@ export class ClienteRepository {
     };
   };
 
-  findById = async (id: number, tx?: Prisma.TransactionClient): Promise<Cliente | null> => {
+  findById = async (id: number, tenantId: number, tx?: Prisma.TransactionClient): Promise<Cliente | null> => {
     if (tx) {
       return tx.cliente
-        .findUnique({ where: { id }, include: this.include() })
+        .findFirst({ where: { id, id_tenant: tenantId }, include: this.include() })
         .then((cliente) => this.format(cliente));
     }
 
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       return tx.cliente
-        .findUnique({ where: { id }, include: this.include() })
+        .findFirst({ where: { id, id_tenant: tenantId }, include: this.include() })
         .then((cliente) => this.format(cliente));
     });
   };
 
-  create = async (data: Partial<Cliente>, tx?: Prisma.TransactionClient): Promise<Cliente | null> => {
+  create = async (data: Partial<Cliente>, tenantId: number, tx?: Prisma.TransactionClient): Promise<Cliente | null> => {
     const { nome, cnpj } = data;
     if (!nome || nome === "") {
       throw new Error(`Erro ao criar cliente: nome é obrigatório`);
@@ -158,6 +166,7 @@ export class ClienteRepository {
           data: {
             nome: nome,
             cnpj: cnpj || null,
+            id_tenant: tenantId,
           },
           include: this.include(),
         })
@@ -169,7 +178,8 @@ export class ClienteRepository {
         .create({
           data: {
             nome: nome,
-            cnpj: cnpj || null
+            cnpj: cnpj || null,
+            id_tenant: tenantId,
           },
           include: this.include(),
         })

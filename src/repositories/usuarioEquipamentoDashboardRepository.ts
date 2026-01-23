@@ -95,6 +95,7 @@ export class UsuarioEquipamentoDashboardRepository {
   async create(
     id_usuario: number,
     id_equipamento: number,
+    tenantId: number,
     id_metrica?: number | null,
     id_tipo_grafico?: number | null,
     tx?: Prisma.TransactionClient
@@ -105,6 +106,7 @@ export class UsuarioEquipamentoDashboardRepository {
       data: {
         id_usuario,
         id_equipamento,
+        id_tenant: tenantId,
         id_metrica: id_metrica || null,
         id_tipo_grafico: id_tipo_grafico || null,
         created_at: new Date()

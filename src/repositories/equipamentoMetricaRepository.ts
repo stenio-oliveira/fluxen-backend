@@ -84,14 +84,25 @@ export class EquipamentoMetricaRepository {
 
   async create(
     data: CreateEquipamentoMetricaDTO,
+    tenantId: number,
     tx?: Prisma.TransactionClient
   ): Promise<EquipamentoMetrica> {
 
     if (tx) {
-      return tx.equipamento_metricas.create({ data });
+      return tx.equipamento_metricas.create({ 
+        data: {
+          ...data,
+          id_tenant: tenantId,
+        }
+      });
     }
     return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      return tx.equipamento_metricas.create({ data });
+      return tx.equipamento_metricas.create({ 
+        data: {
+          ...data,
+          id_tenant: tenantId,
+        }
+      });
     });
   }
 
