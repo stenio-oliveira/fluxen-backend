@@ -89,6 +89,7 @@ model usuario {
   notificacoes                  notificacao[]
   password_reset_audit          password_reset_audit[]
   password_reset_token          password_reset_token[]
+  support_tickets               support_tickets[]
   created_by_usuario            usuario?                        @relation("UsuarioCreatedBy", fields: [created_by], references: [id], map: "usuario_created_by")
   created_usuarios              usuario[]                       @relation("UsuarioCreatedBy")
   usuario_equipamento_dashboard usuario_equipamento_dashboard[]
@@ -233,4 +234,20 @@ model tenant {
   @@index([stripe_customer_id], map: "idx_tenant_stripe_customer_id")
   @@index([stripe_subscription_id], map: "idx_tenant_stripe_subscription_id")
   @@index([subscription_status], map: "idx_tenant_subscription_status")
+}
+
+model support_tickets {
+  id              Int       @id @default(autoincrement())
+  id_tenant       Int?
+  id_usuario      Int?
+  descricao       String    @db.Text
+  email           String?   @db.VarChar(255)
+  numero_telefone String?   @db.VarChar(20)
+  anexo           String?   @db.VarChar(500)
+  created_at      DateTime? @default(now()) @db.DateTime(0)
+  usuario         usuario?  @relation(fields: [id_usuario], references: [id], onUpdate: NoAction)
+
+  @@index([created_at])
+  @@index([id_tenant])
+  @@index([id_usuario])
 }

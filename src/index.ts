@@ -14,6 +14,7 @@ import usuarioEquipamentoDashboardRouter from './routers/usuarioEquipamentoDashb
 import chartRouter from './routers/chartRouter';
 import notificacaoRouter from './routers/notificacaoRouter';
 import reportRouter from './routers/reportRouter';
+import supportRouter from './routers/supportRouter';
 import cors from "cors";
 import morgan from "morgan";
 import { logger, logError, logInfo, logWarn } from './utils/logger';
@@ -65,6 +66,7 @@ app.use('/api', usuarioEquipamentoDashboardRouter);
 app.use('/api', chartRouter);
 app.use('/api', notificacaoRouter);
 app.use('/api', reportRouter);
+app.use('/api', supportRouter);
 
 // Start the server
 const PORT = process.env.PORT || 3000;
