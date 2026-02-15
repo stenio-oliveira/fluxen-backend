@@ -15,6 +15,7 @@ import chartRouter from './routers/chartRouter';
 import notificacaoRouter from './routers/notificacaoRouter';
 import reportRouter from './routers/reportRouter';
 import supportRouter from './routers/supportRouter';
+import systemAnnouncementRouter from './routers/systemAnnouncementRouter';
 import cors from "cors";
 import morgan from "morgan";
 import { logger, logError, logInfo, logWarn } from './utils/logger';
@@ -67,6 +68,7 @@ app.use('/api', chartRouter);
 app.use('/api', notificacaoRouter);
 app.use('/api', reportRouter);
 app.use('/api', supportRouter);
+app.use('/api', systemAnnouncementRouter);
 
 // Start the server
 const PORT = process.env.PORT || 3000;

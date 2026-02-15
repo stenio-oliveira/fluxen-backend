@@ -90,6 +90,7 @@ model usuario {
   password_reset_audit          password_reset_audit[]
   password_reset_token          password_reset_token[]
   support_tickets               support_tickets[]
+  system_announcement           system_announcement[]
   created_by_usuario            usuario?                        @relation("UsuarioCreatedBy", fields: [created_by], references: [id], map: "usuario_created_by")
   created_usuarios              usuario[]                       @relation("UsuarioCreatedBy")
   usuario_equipamento_dashboard usuario_equipamento_dashboard[]
@@ -250,4 +251,32 @@ model support_tickets {
   @@index([created_at])
   @@index([id_tenant])
   @@index([id_usuario])
+}
+
+model system_announcement {
+  id          Int                      @id @default(autoincrement())
+  id_tenant   Int?
+  title       String                   @db.VarChar(255)
+  description String                   @db.Text
+  type        system_announcement_type
+  is_active   Boolean                  @default(false)
+  starts_at   DateTime                 @db.DateTime(0)
+  ends_at     DateTime?                @db.DateTime(0)
+  created_by  Int?
+  created_at  DateTime?                @default(now()) @db.DateTime(0)
+  usuario     usuario?                 @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+
+  @@index([created_by])
+  @@index([ends_at])
+  @@index([id_tenant])
+  @@index([is_active])
+  @@index([starts_at])
+  @@index([type])
+}
+
+enum system_announcement_type {
+  CONTINGENCY
+  MAINTENANCE
+  INFO
+  CRITICAL
 }
